@@ -9,9 +9,12 @@ import '../engine/board_theme.dart';
 import '../engine/game_state.dart';
 import '../engine/models.dart';
 import '../engine/rank.dart';
+import '../engine/replay.dart';
 import '../viewmodels/game_view_model.dart';
+import 'kifu_viewer_screen.dart';
 import 'puzzle_screen.dart';
 import 'rank_detail_screen.dart';
+import 'statistics_screen.dart';
 import 'tutorial_screen.dart';
 
 const _highlightColor = Color(0x664CAF50);
@@ -116,10 +119,35 @@ class GameScreen extends ConsumerWidget {
             ],
           ),
           IconButton(
+            key: const Key('statistics_button'),
+            icon: const Icon(Icons.bar_chart),
+            tooltip: '成績',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const StatisticsScreen()),
+              );
+            },
+          ),
+          IconButton(
             key: const Key('kifu_button'),
             icon: const Icon(Icons.history),
             tooltip: '棋譜',
-            onPressed: () => _showKifuSheet(context, game, theme),
+            onPressed: () {
+              if (game.isOver && game.moveHistory.isNotEmpty) {
+                // For completed games, show the full replay viewer
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => KifuViewerScreen(
+                      completedGame: game,
+                      theme: theme,
+                    ),
+                  ),
+                );
+              } else {
+                // For in-progress games, show the simple sheet
+                _showKifuSheet(context, game, theme);
+              }
+            },
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -301,28 +329,94 @@ class _TurnBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     if (game.isOver) return const SizedBox(height: 12);
     final isA = game.turn == Owner.playerA;
+    final countA = game.board.pieceCount(Owner.playerA);
+    final countB = game.board.pieceCount(Owner.playerB);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
         children: [
-          Container(
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(
-              color: isA ? theme.frontPieceColor : theme.backPieceColor,
-              shape: BoxShape.circle,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: isA ? theme.frontPieceColor : theme.backPieceColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isA ? '藍陣営の番' : '朱陣営の番',
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                '（${game.plyCount}/$plyLimit手）',
+                style: const TextStyle(color: Colors.white54, fontSize: 13),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Text(
-            isA ? '藍陣営の番' : '朱陣営の番',
-            style: const TextStyle(color: Colors.white, fontSize: 16),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _PieceCountBadge(
+                label: '藍',
+                count: countA,
+                color: theme.frontPieceColor,
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'vs',
+                style: TextStyle(color: theme.accentGold, fontSize: 12),
+              ),
+              const SizedBox(width: 16),
+              _PieceCountBadge(
+                label: '朱',
+                count: countB,
+                color: theme.backPieceColor,
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
+        ],
+      ),
+    );
+  }
+}
+
+class _PieceCountBadge extends StatelessWidget {
+  final String label;
+  final int count;
+  final Color color;
+
+  const _PieceCountBadge({
+    required this.label,
+    required this.count,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        border: Border.all(color: color, width: 1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        children: [
           Text(
-            '（${game.plyCount}/$plyLimit手）',
-            style: const TextStyle(color: Colors.white54, fontSize: 13),
+            label,
+            style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '$count',
+            style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold),
           ),
         ],
       ),
