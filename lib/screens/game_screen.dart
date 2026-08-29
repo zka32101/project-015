@@ -11,6 +11,7 @@ import '../engine/models.dart';
 import '../engine/rank.dart';
 import '../engine/replay.dart';
 import '../viewmodels/game_view_model.dart';
+import 'achievements_screen.dart';
 import 'kifu_viewer_screen.dart';
 import 'puzzle_screen.dart';
 import 'rank_detail_screen.dart';
@@ -154,6 +155,16 @@ class GameScreen extends ConsumerWidget {
             icon: const Icon(Icons.refresh),
             onPressed: viewModel.restart,
             tooltip: 'はじめから',
+          ),
+          IconButton(
+            key: const Key('achievements_button'),
+            icon: const Icon(Icons.emoji_events),
+            tooltip: '実績',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+              );
+            },
           ),
           IconButton(
             key: const Key('settings_button'),
