@@ -14,6 +14,7 @@ import '../viewmodels/game_view_model.dart';
 import 'kifu_viewer_screen.dart';
 import 'puzzle_screen.dart';
 import 'rank_detail_screen.dart';
+import 'settings_screen.dart';
 import 'statistics_screen.dart';
 import 'tutorial_screen.dart';
 
@@ -153,6 +154,16 @@ class GameScreen extends ConsumerWidget {
             icon: const Icon(Icons.refresh),
             onPressed: viewModel.restart,
             tooltip: 'はじめから',
+          ),
+          IconButton(
+            key: const Key('settings_button'),
+            icon: const Icon(Icons.settings),
+            tooltip: '設定',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
           ),
         ],
       ),
