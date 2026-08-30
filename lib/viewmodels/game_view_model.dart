@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -6,10 +8,12 @@ import '../engine/game_state.dart';
 import '../engine/models.dart';
 import '../engine/move_generator.dart';
 import '../engine/rank.dart';
+import '../engine/statistics.dart';
 
 /// The AI, when enabled, always controls playerB.
 const aiControlledOwner = Owner.playerB;
 const rankPointsPrefsKey = 'rank_points';
+const gameStatisticsPrefsKey = 'game_statistics';
 
 class GameViewState {
   final GameState game;
@@ -19,6 +23,7 @@ class GameViewState {
   final AiDifficulty? aiDifficulty;
   final bool showThreatPreview;
   final int rankPoints;
+  final GameStatistics statistics;
 
   const GameViewState({
     required this.game,
@@ -28,7 +33,8 @@ class GameViewState {
     this.aiDifficulty,
     this.showThreatPreview = false,
     this.rankPoints = 0,
-  });
+    GameStatistics? statistics,
+  }) : statistics = statistics ?? GameStatistics();
 
   /// Squares the side NOT currently to move could land on next turn --
   /// design doc v1.1 "透け読みモード" (opponent-threat preview), toggle-able.
@@ -65,6 +71,7 @@ class GameViewState {
     bool clearAiDifficulty = false,
     bool? showThreatPreview,
     int? rankPoints,
+    GameStatistics? statistics,
   }) {
     return GameViewState(
       game: game,
@@ -75,6 +82,7 @@ class GameViewState {
           clearAiDifficulty ? null : (aiDifficulty ?? this.aiDifficulty),
       showThreatPreview: showThreatPreview ?? this.showThreatPreview,
       rankPoints: rankPoints ?? this.rankPoints,
+      statistics: statistics ?? this.statistics,
     );
   }
 
@@ -85,6 +93,7 @@ class GameViewState {
       aiDifficulty: aiDifficulty,
       showThreatPreview: showThreatPreview,
       rankPoints: rankPoints,
+      statistics: statistics,
     );
   }
 }
@@ -94,10 +103,12 @@ class GameViewState {
 /// auto-playing playerB's turns.
 class GameViewModel extends Notifier<GameViewState> {
   bool _winRecordedThisGame = false;
+  bool _gameStatsRecordedThisGame = false;
 
   @override
   GameViewState build() {
     _loadRankPoints();
+    _loadStatistics();
     return GameViewState(game: GameState.initial());
   }
 
@@ -105,6 +116,27 @@ class GameViewModel extends Notifier<GameViewState> {
     final prefs = await SharedPreferences.getInstance();
     final points = prefs.getInt(rankPointsPrefsKey) ?? 0;
     state = state.copyWith(rankPoints: points);
+  }
+
+  Future<void> _loadStatistics() async {
+    final prefs = await SharedPreferences.getInstance();
+    final statsJson = prefs.getString(gameStatisticsPrefsKey);
+    if (statsJson != null) {
+      try {
+        final Map<String, dynamic> decoded = jsonDecode(statsJson);
+        final stats = GameStatistics.fromJson(decoded);
+        state = state.copyWith(statistics: stats);
+      } catch (e) {
+        // If deserialization fails, start fresh
+        state = state.copyWith(statistics: GameStatistics());
+      }
+    }
+  }
+
+  Future<void> _saveStatistics() async {
+    final prefs = await SharedPreferences.getInstance();
+    final statsJson = jsonEncode(state.statistics.toJson());
+    await prefs.setString(gameStatisticsPrefsKey, statsJson);
   }
 
   void selectSquare(Square square) {
@@ -154,6 +186,7 @@ class GameViewModel extends Notifier<GameViewState> {
 
   void restart() {
     _winRecordedThisGame = false;
+    _gameStatsRecordedThisGame = false;
     state = state._carryMeta(GameState.initial());
     _maybeScheduleAiMove();
   }
@@ -164,7 +197,24 @@ class GameViewModel extends Notifier<GameViewState> {
     if (MoveGenerator.legalMovesFor(s.game.board, s.game.turn).isEmpty) {
       s.game.declareNoMovesLoss();
       state = s._carryMeta(s.game, lastMove: s.lastMove);
+      _maybeRecordGameStatistics();
     }
+  }
+
+  /// Record game statistics (wins, losses, streaks) for completed games.
+  void _maybeRecordGameStatistics() {
+    if (_gameStatsRecordedThisGame) return;
+    final s = state;
+    if (!s.game.isOver) return;
+
+    _gameStatsRecordedThisGame = true;
+    final difficulty = s.aiDifficulty;
+    s.statistics.recordGame(
+      result: s.game.result,
+      aiDifficultyLabel: difficulty?.name,
+    );
+    state = s.copyWith(statistics: s.statistics);
+    _saveStatistics();
   }
 
   /// Persists rank-ladder points the first (and only the first) time a given
@@ -182,6 +232,9 @@ class GameViewModel extends Notifier<GameViewState> {
     SharedPreferences.getInstance().then((prefs) {
       prefs.setInt(rankPointsPrefsKey, newPoints);
     });
+
+    // Also record game statistics
+    _maybeRecordGameStatistics();
   }
 
   void _maybeScheduleAiMove() {
@@ -199,6 +252,7 @@ class GameViewModel extends Notifier<GameViewState> {
       if (move == null) {
         s.game.declareNoMovesLoss();
         state = s._carryMeta(s.game, lastMove: s.lastMove);
+        _maybeRecordGameStatistics();
         return;
       }
       s.game.applyMove(move);
