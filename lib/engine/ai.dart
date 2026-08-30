@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'ai_evaluator.dart';
 import 'board.dart';
 import 'models.dart';
 import 'move_generator.dart';
@@ -15,7 +16,7 @@ enum AiDifficulty { easy, medium, hard }
 class ReversiaAi {
   final AiDifficulty difficulty;
   final Random random;
-  static const int _hardSearchDepth = 3;
+  static const int _hardSearchDepth = 4;
 
   ReversiaAi(this.difficulty, [Random? random]) : random = random ?? Random();
 
@@ -25,7 +26,7 @@ class ReversiaAi {
 
     switch (difficulty) {
       case AiDifficulty.easy:
-        return moves[random.nextInt(moves.length)];
+        return _pickEasy(board, owner, moves);
       case AiDifficulty.medium:
         return _pickGreedy(board, owner, moves);
       case AiDifficulty.hard:
@@ -33,20 +34,41 @@ class ReversiaAi {
     }
   }
 
+  Move _pickEasy(Board board, Owner owner, List<Move> moves) {
+    // Easy: 80% random, 20% smart (prefer captures)
+    if (random.nextDouble() < 0.8) {
+      return moves[random.nextInt(moves.length)];
+    }
+
+    // 20% of the time, make a slightly smarter move
+    Move? bestMove;
+    var bestScore = -100;
+
+    for (final move in moves) {
+      final score = AiStrategy.evaluateMoveEasy(board, move, owner);
+      if (score > bestScore) {
+        bestScore = score;
+        bestMove = move;
+      }
+    }
+
+    return bestMove ?? moves[random.nextInt(moves.length)];
+  }
+
   Move _pickGreedy(Board board, Owner owner, List<Move> moves) {
-    final kingCapture = moves.where((m) {
-      final target = board.at(m.to);
-      return target != null && target.owner != owner && target.type == PieceType.king;
-    });
-    if (kingCapture.isNotEmpty) return kingCapture.first;
+    // Use advanced evaluator for greedy move selection
+    Move? bestMove;
+    var bestScore = -9999;
 
-    final captures = moves.where((m) {
-      final target = board.at(m.to);
-      return target != null && target.owner != owner;
-    }).toList();
-    if (captures.isNotEmpty) return captures[random.nextInt(captures.length)];
+    for (final move in moves) {
+      final score = AiStrategy.evaluateMoveMedium(board, move, owner);
+      if (score > bestScore) {
+        bestScore = score;
+        bestMove = move;
+      }
+    }
 
-    return moves[random.nextInt(moves.length)];
+    return bestMove ?? moves[random.nextInt(moves.length)];
   }
 
   Move _pickMinimax(Board board, Owner owner, List<Move> moves) {
@@ -91,9 +113,8 @@ class ReversiaAi {
   }
 
   int _evaluate(Board board, Owner owner) {
-    final mine = board.pieceCount(owner);
-    final theirs = board.pieceCount(owner.opponent);
-    return (mine - theirs) * 10;
+    // Use advanced strategic evaluation for minimax
+    return AiStrategy.evaluateBoardHard(board, owner);
   }
 
   /// Applies [move] to a clone of [board] and returns the clone -- used for
