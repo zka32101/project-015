@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
+import 'models.dart';
+
 /// Enhanced victory animation with multiple visual effects
 class VictoryAnimationController extends ChangeNotifier {
   late AnimationController _controller;
@@ -64,8 +66,6 @@ class VictoryCrownWidget extends StatefulWidget {
   @override
   State<VictoryCrownWidget> createState() => _VictoryCrownWidgetState();
 }
-
-enum Owner { playerA, playerB }
 
 class _VictoryCrownWidgetState extends State<VictoryCrownWidget>
     with SingleTickerProviderStateMixin {
