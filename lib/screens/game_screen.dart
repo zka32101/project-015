@@ -5,11 +5,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/ai.dart';
+import '../engine/animation_effects.dart';
 import '../engine/board_theme.dart';
+import '../engine/enhanced_board_themes.dart';
 import '../engine/game_state.dart';
 import '../engine/models.dart';
+import '../engine/particle_effects.dart';
 import '../engine/rank.dart';
 import '../engine/replay.dart';
+import '../engine/victory_effects.dart';
 import '../viewmodels/game_view_model.dart';
 import 'achievements_screen.dart';
 import 'kifu_viewer_screen.dart';
@@ -446,25 +450,99 @@ class _PieceCountBadge extends StatelessWidget {
   }
 }
 
-class _ResultBanner extends StatelessWidget {
+class _ResultBanner extends StatefulWidget {
   final GameState game;
   final BoardTheme theme;
   final VoidCallback onRestart;
   const _ResultBanner({required this.game, required this.theme, required this.onRestart});
 
   @override
+  State<_ResultBanner> createState() => _ResultBannerState();
+}
+
+class _ResultBannerState extends State<_ResultBanner> with TickerProviderStateMixin {
+  late AnimationController _victoryController;
+  late AnimationController _textController;
+  late AnimationController _starsController;
+
+  @override
+  void initState() {
+    super.initState();
+    _victoryController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    _textController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _starsController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    );
+
+    // Stagger animations
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _victoryController.forward();
+      }
+    });
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        _textController.forward();
+      }
+    });
+    Future.delayed(const Duration(milliseconds: 400), () {
+      if (mounted) {
+        _starsController.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _victoryController.dispose();
+    _textController.dispose();
+    _starsController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final text = switch (game.result) {
+    final text = switch (widget.game.result) {
       GameResult.playerAWins => '藍陣営の勝利！',
       GameResult.playerBWins => '朱陣営の勝利！',
       GameResult.draw => '引き分け',
       _ => '',
     };
+
+    final winner = switch (widget.game.result) {
+      GameResult.playerAWins => Owner.playerA,
+      GameResult.playerBWins => Owner.playerB,
+      _ => Owner.playerA,
+    };
+
+    final victoryColor = winner == Owner.playerA
+        ? widget.theme.frontPieceColor
+        : widget.theme.backPieceColor;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Stack(
         alignment: Alignment.center,
         children: [
+          // Star field background
+          VictoryStarField(
+            color: widget.theme.accentGold,
+            starCount: 20,
+            enabled: true,
+          ),
+          // Celebration burst
+          VictoryCelebrationBurst(
+            center: const Offset(0.5, 0.5),
+            color: victoryColor,
+            enabled: true,
+          ),
           const Positioned.fill(
             child: IgnorePointer(
               child: Opacity(
@@ -479,11 +557,38 @@ class _ResultBanner extends StatelessWidget {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(text,
-                  style: TextStyle(
-                      color: theme.accentGold, fontSize: 22, fontWeight: FontWeight.bold)),
+              // Crown animation
+              SizedBox(
+                height: 100,
+                child: Center(
+                  child: VictoryCrownWidget(
+                    winner: winner,
+                    enabled: true,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Victory text
+              VictoryTextAnimator(
+                text: text,
+                color: widget.theme.accentGold,
+                duration: const Duration(milliseconds: 800),
+                enabled: true,
+              ),
               const SizedBox(height: 8),
-              ElevatedButton(onPressed: onRestart, child: const Text('もう一局')),
+              // Confetti effect
+              SizedBox(
+                height: 100,
+                child: ConfettiWidget(
+                  duration: const Duration(milliseconds: 2000),
+                  enabled: true,
+                  primaryColor: widget.theme.accentGold,
+                  secondaryColor: victoryColor,
+                  particleCount: 30,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(onPressed: widget.onRestart, child: const Text('もう一局')),
             ],
           ),
         ],
@@ -492,7 +597,7 @@ class _ResultBanner extends StatelessWidget {
   }
 }
 
-class _Board extends StatelessWidget {
+class _Board extends StatefulWidget {
   final GameViewState viewState;
   final BoardTheme theme;
   final void Function(Square) onTapSquare;
@@ -500,49 +605,97 @@ class _Board extends StatelessWidget {
   const _Board({required this.viewState, required this.theme, required this.onTapSquare});
 
   @override
-  Widget build(BuildContext context) {
-    final kingThreatSquares = viewState.kingThreatSquares.toSet();
-    final threatSquares =
-        viewState.opponentThreatSquares.where((s) => !kingThreatSquares.contains(s)).toSet();
+  State<_Board> createState() => _BoardState();
+}
 
-    return Container(
-      decoration: BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage(theme.woodTextureAsset),
-          fit: BoxFit.cover,
-        ),
-        border: Border.all(color: theme.accentGold, width: 3),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: GridView.builder(
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(6),
-        gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6),
-        itemCount: 36,
-        itemBuilder: (context, index) {
-          final row = index ~/ 6;
-          final col = index % 6;
-          final square = Square(row, col);
-          return _BoardCell(
-            key: Key('cell_${row}_$col'),
-            square: square,
-            piece: viewState.game.board.at(square),
-            theme: theme,
-            isSelected: viewState.selected == square,
-            isLegalDestination: viewState.legalDestinations.contains(square),
-            isThreatened: threatSquares.contains(square),
-            isKingThreatened: kingThreatSquares.contains(square),
-            isLastMove: viewState.lastMoveSquares.contains(square),
-            isCurrentTurnPiece: viewState.game.board.at(square)?.owner ==
-                viewState.game.turn,
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onTapSquare(square);
+class _BoardState extends State<_Board> with SingleTickerProviderStateMixin {
+  late AnimationController _themeTransitionController;
+  BoardTheme? _previousTheme;
+
+  @override
+  void initState() {
+    super.initState();
+    _themeTransitionController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _previousTheme = widget.theme;
+  }
+
+  @override
+  void didUpdateWidget(covariant _Board oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.theme, widget.theme)) {
+      _previousTheme = oldWidget.theme;
+      _themeTransitionController.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _themeTransitionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final kingThreatSquares = widget.viewState.kingThreatSquares.toSet();
+    final threatSquares = widget.viewState.opponentThreatSquares
+        .where((s) => !kingThreatSquares.contains(s))
+        .toSet();
+
+    return AnimatedBuilder(
+      animation: _themeTransitionController,
+      builder: (context, child) {
+        // Interpolate theme colors during transition
+        final displayTheme = _previousTheme != null && _themeTransitionController.value < 1
+            ? ThemeTransition(
+                from: _previousTheme!,
+                to: widget.theme,
+                progress: _themeTransitionController.value,
+              ).getInterpolated()
+            : widget.theme;
+
+        return Container(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage(displayTheme.woodTextureAsset),
+              fit: BoxFit.cover,
+            ),
+            border: Border.all(color: displayTheme.accentGold, width: 3),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(6),
+            gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6),
+            itemCount: 36,
+            itemBuilder: (context, index) {
+              final row = index ~/ 6;
+              final col = index % 6;
+              final square = Square(row, col);
+              return _BoardCell(
+                key: Key('cell_${row}_$col'),
+                square: square,
+                piece: widget.viewState.game.board.at(square),
+                theme: displayTheme,
+                isSelected: widget.viewState.selected == square,
+                isLegalDestination: widget.viewState.legalDestinations.contains(square),
+                isThreatened: threatSquares.contains(square),
+                isKingThreatened: kingThreatSquares.contains(square),
+                isLastMove: widget.viewState.lastMoveSquares.contains(square),
+                isCurrentTurnPiece: widget.viewState.game.board.at(square)?.owner ==
+                    widget.viewState.game.turn,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  widget.onTapSquare(square);
+                },
+              );
             },
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -708,6 +861,7 @@ class _FlipPiece extends StatefulWidget {
 class _FlipPieceState extends State<_FlipPiece> with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   Piece? _outgoingPiece;
+  bool _showParticleEffect = false;
 
   @override
   void initState() {
@@ -723,8 +877,18 @@ class _FlipPieceState extends State<_FlipPiece> with SingleTickerProviderStateMi
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.piece, widget.piece)) {
       _outgoingPiece = oldWidget.piece;
+      _showParticleEffect = true;
       _controller.forward(from: 0);
       SystemSound.play(SystemSoundType.click);
+
+      // Reset particle effect flag after animation completes
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (mounted) {
+          setState(() {
+            _showParticleEffect = false;
+          });
+        }
+      });
     }
   }
 
@@ -736,45 +900,62 @@ class _FlipPieceState extends State<_FlipPiece> with SingleTickerProviderStateMi
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        final t = _controller.value;
-        final angle = t * math.pi;
-        final showingOutgoing = angle < math.pi / 2 && _outgoingPiece != null;
-        final displayed = showingOutgoing ? _outgoingPiece! : widget.piece;
-        final matrix = Matrix4.identity()
-          ..setEntry(3, 2, 0.002)
-          ..rotateY(showingOutgoing ? angle : angle - math.pi);
-        final pulse = math.sin(t * math.pi); // 0 -> 1 -> 0 across the flip
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Particle effect burst on capture
+        if (_showParticleEffect)
+          ParticleEffectWidget(
+            position: const Offset(17, 17), // Center of the piece circle
+            color: widget.theme.accentGold.withValues(alpha: 0.8),
+            size: 6.0,
+            maxDistance: 50.0,
+            particleCount: 8,
+            duration: const Duration(milliseconds: 600),
+            enabled: true,
+          ),
+        // Piece flip animation
+        AnimatedBuilder(
+          animation: _controller,
+          builder: (context, _) {
+            final t = _controller.value;
+            final angle = t * math.pi;
+            final showingOutgoing = angle < math.pi / 2 && _outgoingPiece != null;
+            final displayed = showingOutgoing ? _outgoingPiece! : widget.piece;
+            final matrix = Matrix4.identity()
+              ..setEntry(3, 2, 0.002)
+              ..rotateY(showingOutgoing ? angle : angle - math.pi);
+            final pulse = math.sin(t * math.pi); // 0 -> 1 -> 0 across the flip
 
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            if (pulse > 0)
-              Opacity(
-                opacity: pulse * 0.75,
-                child: Container(
-                  width: 34 + pulse * 22,
-                  height: 34 + pulse * 22,
-                  decoration: BoxDecoration(
-                    color: widget.theme.accentGold,
-                    shape: BoxShape.circle,
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                if (pulse > 0)
+                  Opacity(
+                    opacity: pulse * 0.75,
+                    child: Container(
+                      width: 34 + pulse * 22,
+                      height: 34 + pulse * 22,
+                      decoration: BoxDecoration(
+                        color: widget.theme.accentGold,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                Transform(
+                  alignment: Alignment.center,
+                  transform: matrix,
+                  child: _PieceCircle(
+                    piece: displayed,
+                    theme: widget.theme,
+                    emphasize: widget.emphasize,
                   ),
                 ),
-              ),
-            Transform(
-              alignment: Alignment.center,
-              transform: matrix,
-              child: _PieceCircle(
-                piece: displayed,
-                theme: widget.theme,
-                emphasize: widget.emphasize,
-              ),
-            ),
-          ],
-        );
-      },
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }
