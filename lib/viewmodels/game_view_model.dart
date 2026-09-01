@@ -24,6 +24,7 @@ class GameViewState {
   final bool showThreatPreview;
   final int rankPoints;
   final GameStatistics statistics;
+  final bool isAiThinking;
 
   const GameViewState({
     required this.game,
@@ -34,6 +35,7 @@ class GameViewState {
     this.showThreatPreview = false,
     this.rankPoints = 0,
     GameStatistics? statistics,
+    this.isAiThinking = false,
   }) : statistics = statistics ?? GameStatistics();
 
   /// Squares the side NOT currently to move could land on next turn --
@@ -72,6 +74,7 @@ class GameViewState {
     bool? showThreatPreview,
     int? rankPoints,
     GameStatistics? statistics,
+    bool? isAiThinking,
   }) {
     return GameViewState(
       game: game,
@@ -83,6 +86,7 @@ class GameViewState {
       showThreatPreview: showThreatPreview ?? this.showThreatPreview,
       rankPoints: rankPoints ?? this.rankPoints,
       statistics: statistics ?? this.statistics,
+      isAiThinking: isAiThinking ?? this.isAiThinking,
     );
   }
 
@@ -242,6 +246,9 @@ class GameViewModel extends Notifier<GameViewState> {
     if (difficulty == null) return;
     if (state.game.isOver || state.game.turn != aiControlledOwner) return;
 
+    // Show thinking indicator
+    state = state.copyWith(isAiThinking: true);
+
     Future.delayed(const Duration(milliseconds: 500), () {
       final s = state;
       if (s.game.isOver || s.game.turn != aiControlledOwner) return;
@@ -251,15 +258,60 @@ class GameViewModel extends Notifier<GameViewState> {
       final move = ai.pickMove(s.game.board, aiControlledOwner);
       if (move == null) {
         s.game.declareNoMovesLoss();
-        state = s._carryMeta(s.game, lastMove: s.lastMove);
+        state = s._carryMeta(s.game, lastMove: s.lastMove).copyWith(isAiThinking: false);
         _maybeRecordGameStatistics();
         return;
       }
       s.game.applyMove(move);
-      state = s._carryMeta(s.game, lastMove: move);
+      state = s._carryMeta(s.game, lastMove: move).copyWith(isAiThinking: false);
       _autoFailIfNoMoves();
       _maybeRecordAiWin();
     });
+  }
+
+  /// Calculate which squares would be affected by a move (for preview).
+  /// Returns a list of squares whose pieces would flip/change.
+  List<Square> getAffectedSquares(Move move) {
+    final board = state.game.board;
+    final piece = board.at(move.from);
+    if (piece == null) return const [];
+
+    final affected = <Square>[];
+    final target = board.at(move.to);
+
+    // If capturing, the target piece is affected
+    if (target != null) {
+      affected.add(move.to);
+    }
+
+    // The moving piece itself changes if it flips
+    if (piece.type != PieceType.king && target == null) {
+      affected.add(move.from);
+    }
+
+    return affected;
+  }
+
+  /// Whether the last move can be undone (simple check: not over, have moves)
+  bool get canUndo => !state.game.isOver && state.game.moveHistory.isNotEmpty;
+
+  /// Undo the last move by restarting and replaying all but the last move
+  void undoLastMove() {
+    final s = state;
+    if (s.game.moveHistory.isEmpty) return;
+
+    // Create a fresh game
+    final newGame = GameState.initial();
+    final moves = s.game.moveHistory;
+
+    // Replay all moves except the last one
+    for (int i = 0; i < moves.length - 1; i++) {
+      newGame.applyMove(moves[i]);
+    }
+
+    // Update state with the game rolled back one move
+    final previousMove = moves.length >= 2 ? moves[moves.length - 2] : null;
+    state = s._carryMeta(newGame, lastMove: previousMove);
   }
 }
 

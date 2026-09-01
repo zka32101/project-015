@@ -151,7 +151,7 @@ class GameScreen extends ConsumerWidget {
                 );
               } else {
                 // For in-progress games, show the simple sheet
-                _showKifuSheet(context, game, theme);
+                _showKifuSheet(context, game, theme, viewState.aiDifficulty);
               }
             },
           ),
@@ -187,7 +187,7 @@ class GameScreen extends ConsumerWidget {
           children: [
             Column(
               children: [
-                _TurnBanner(game: game, theme: theme),
+                _TurnBanner(game: game, theme: theme, aiDifficulty: viewState.aiDifficulty),
                 Expanded(
                   child: Center(
                     child: Padding(
@@ -198,11 +198,52 @@ class GameScreen extends ConsumerWidget {
                           viewState: viewState,
                           theme: theme,
                           onTapSquare: viewModel.selectSquare,
+                          viewModel: viewModel,
                         ),
                       ),
                     ),
                   ),
                 ),
+                // AI thinking indicator
+                if (viewState.isAiThinking)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(theme.accentGold),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '考え中...',
+                          style: TextStyle(color: theme.accentGold, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  )
+                // Undo button (appears after first move, before game over)
+                else if (!game.isOver && viewModel.canUndo)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: TextButton.icon(
+                      key: const Key('undo_button'),
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        viewModel.undoLastMove();
+                      },
+                      icon: const Icon(Icons.undo),
+                      label: const Text('戻す'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: theme.accentGold,
+                      ),
+                    ),
+                  ),
                 if (game.isOver)
                   _ResultBanner(game: game, theme: theme, onRestart: viewModel.restart),
               ],
@@ -218,18 +259,36 @@ class GameScreen extends ConsumerWidget {
 /// Section3 Must#5 "対局リプレイ（棋譜保存・見返し）" -- a simple scrollable move
 /// list, opened on demand rather than a full replay-scrubber (no separate
 /// replay engine yet; GameState.moveHistory already has everything needed).
-void _showKifuSheet(BuildContext context, GameState game, BoardTheme theme) {
+void _showKifuSheet(BuildContext context, GameState game, BoardTheme theme, AiDifficulty? aiDifficulty) {
   showModalBottomSheet(
     context: context,
     backgroundColor: theme.woodDark,
-    builder: (context) => _KifuSheet(moveHistory: game.moveHistory, theme: theme),
+    builder: (context) => _KifuSheet(
+      moveHistory: game.moveHistory,
+      theme: theme,
+      aiDifficulty: aiDifficulty,
+    ),
   );
 }
 
 class _KifuSheet extends StatelessWidget {
   final List<Move> moveHistory;
   final BoardTheme theme;
-  const _KifuSheet({required this.moveHistory, required this.theme});
+  final AiDifficulty? aiDifficulty;
+
+  const _KifuSheet({
+    required this.moveHistory,
+    required this.theme,
+    this.aiDifficulty,
+  });
+
+  String _getDifficultyLabel(AiDifficulty difficulty) {
+    return switch (difficulty) {
+      AiDifficulty.easy => 'かんたん',
+      AiDifficulty.medium => 'ふつう',
+      AiDifficulty.hard => 'つよい',
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -240,9 +299,34 @@ class _KifuSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('棋譜',
-                style: TextStyle(
-                    color: theme.accentGold, fontSize: 18, fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('棋譜',
+                    style: TextStyle(
+                        color: theme.accentGold,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
+                // Show AI difficulty if applicable
+                if (aiDifficulty != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: theme.backPieceColor.withValues(alpha: 0.2),
+                      border: Border.all(color: theme.backPieceColor, width: 1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'AI: ${_getDifficultyLabel(aiDifficulty!)}',
+                      style: TextStyle(
+                        color: theme.backPieceColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             const SizedBox(height: 8),
             if (moveHistory.isEmpty)
               const Padding(
@@ -349,7 +433,21 @@ class _VictoryFlashState extends State<_VictoryFlash> with SingleTickerProviderS
 class _TurnBanner extends StatelessWidget {
   final GameState game;
   final BoardTheme theme;
-  const _TurnBanner({required this.game, required this.theme});
+  final AiDifficulty? aiDifficulty;
+
+  const _TurnBanner({
+    required this.game,
+    required this.theme,
+    this.aiDifficulty,
+  });
+
+  String _getDifficultyLabel(AiDifficulty difficulty) {
+    return switch (difficulty) {
+      AiDifficulty.easy => 'かんたん',
+      AiDifficulty.medium => 'ふつう',
+      AiDifficulty.hard => 'つよい',
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -378,6 +476,27 @@ class _TurnBanner extends StatelessWidget {
                 isA ? '藍陣営の番' : '朱陣営の番',
                 style: const TextStyle(color: Colors.white, fontSize: 16),
               ),
+              // Show AI difficulty indicator for AI-controlled player
+              if (aiDifficulty != null && !isA)
+                Padding(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: theme.backPieceColor.withValues(alpha: 0.2),
+                      border: Border.all(color: theme.backPieceColor, width: 1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'AI: ${_getDifficultyLabel(aiDifficulty!)}',
+                      style: TextStyle(
+                        color: theme.backPieceColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
               const SizedBox(width: 10),
               Text(
                 '（${game.plyCount}/$plyLimit手）',
@@ -601,16 +720,31 @@ class _Board extends StatefulWidget {
   final GameViewState viewState;
   final BoardTheme theme;
   final void Function(Square) onTapSquare;
+  final GameViewModel viewModel;
 
-  const _Board({required this.viewState, required this.theme, required this.onTapSquare});
+  const _Board({
+    required this.viewState,
+    required this.theme,
+    required this.onTapSquare,
+    required this.viewModel,
+  });
 
   @override
   State<_Board> createState() => _BoardState();
 }
 
+/// Preview state for long-press move simulation
+class _MovePreview {
+  final Move move;
+  final List<Square> affectedSquares;
+
+  _MovePreview({required this.move, required this.affectedSquares});
+}
+
 class _BoardState extends State<_Board> with SingleTickerProviderStateMixin {
   late AnimationController _themeTransitionController;
   BoardTheme? _previousTheme;
+  _MovePreview? _preview;
 
   @override
   void initState() {
@@ -635,6 +769,20 @@ class _BoardState extends State<_Board> with SingleTickerProviderStateMixin {
   void dispose() {
     _themeTransitionController.dispose();
     super.dispose();
+  }
+
+  void _setPreview(Move move, List<Square> affected) {
+    setState(() {
+      _preview = _MovePreview(move: move, affectedSquares: affected);
+    });
+  }
+
+  void _clearPreview() {
+    if (_preview != null) {
+      setState(() {
+        _preview = null;
+      });
+    }
   }
 
   @override
@@ -675,6 +823,9 @@ class _BoardState extends State<_Board> with SingleTickerProviderStateMixin {
               final row = index ~/ 6;
               final col = index % 6;
               final square = Square(row, col);
+              final isPreviewTarget = _preview?.move.to == square;
+              final isPreviewAffected = _preview?.affectedSquares.contains(square) ?? false;
+
               return _BoardCell(
                 key: Key('cell_${row}_$col'),
                 square: square,
@@ -687,10 +838,22 @@ class _BoardState extends State<_Board> with SingleTickerProviderStateMixin {
                 isLastMove: widget.viewState.lastMoveSquares.contains(square),
                 isCurrentTurnPiece: widget.viewState.game.board.at(square)?.owner ==
                     widget.viewState.game.turn,
+                isPreviewTarget: isPreviewTarget,
+                isPreviewAffected: isPreviewAffected,
                 onTap: () {
                   HapticFeedback.selectionClick();
                   widget.onTapSquare(square);
                 },
+                onLongPressStart: widget.viewState.legalDestinations.contains(square)
+                    ? (sq) {
+                        if (widget.viewState.selected != null) {
+                          final move = Move(widget.viewState.selected!, sq);
+                          final affected = widget.viewModel.getAffectedSquares(move);
+                          _setPreview(move, affected);
+                        }
+                      }
+                    : null,
+                onLongPressEnd: _clearPreview,
               );
             },
           ),
@@ -758,6 +921,10 @@ class _BoardCell extends StatelessWidget {
   final bool isLastMove;
   final bool isCurrentTurnPiece;
   final VoidCallback onTap;
+  final bool isPreviewTarget;
+  final bool isPreviewAffected;
+  final Function(Square)? onLongPressStart;
+  final VoidCallback? onLongPressEnd;
 
   const _BoardCell({
     super.key,
@@ -771,6 +938,10 @@ class _BoardCell extends StatelessWidget {
     required this.isLastMove,
     required this.isCurrentTurnPiece,
     required this.onTap,
+    this.isPreviewTarget = false,
+    this.isPreviewAffected = false,
+    this.onLongPressStart,
+    this.onLongPressEnd,
   });
 
   @override
@@ -779,20 +950,35 @@ class _BoardCell extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
+      onLongPressStart: onLongPressStart != null
+          ? (_) {
+              HapticFeedback.mediumImpact();
+              onLongPressStart!(square);
+            }
+          : null,
+      onLongPressEnd: onLongPressEnd != null
+          ? (_) {
+              onLongPressEnd!();
+            }
+          : null,
       child: Container(
         margin: const EdgeInsets.all(1.5),
         constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
         decoration: BoxDecoration(
           // The parent board already paints the wood texture; each cell just
           // tints over it (rather than a flat fill) so the grain shows through.
-          color: isDark ? Colors.black.withValues(alpha: 0.22) : Colors.white.withValues(alpha: 0.05),
+          color: isPreviewTarget
+              ? Colors.yellow.withValues(alpha: 0.2)
+              : (isDark ? Colors.black.withValues(alpha: 0.22) : Colors.white.withValues(alpha: 0.05)),
           border: isSelected
               ? Border.all(color: theme.accentGold, width: 2.5)
-              : (isKingThreatened
-                  ? Border.all(color: theme.backPieceColor, width: 2.5)
-                  : (isThreatened
-                      ? Border.all(color: theme.backPieceColor, width: 1.5)
-                      : Border.all(color: Colors.transparent, width: 2.5))),
+              : isPreviewTarget
+                  ? Border.all(color: Colors.yellow.withValues(alpha: 0.8), width: 2)
+                  : (isKingThreatened
+                      ? Border.all(color: theme.backPieceColor, width: 2.5)
+                      : (isThreatened
+                          ? Border.all(color: theme.backPieceColor, width: 1.5)
+                          : Border.all(color: Colors.transparent, width: 2.5))),
           borderRadius: BorderRadius.circular(3),
         ),
         child: Stack(
