@@ -204,8 +204,31 @@ class GameScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
+                // AI thinking indicator
+                if (viewState.isAiThinking)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(theme.accentGold),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '考え中...',
+                          style: TextStyle(color: theme.accentGold, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  )
                 // Undo button (appears after first move, before game over)
-                if (!game.isOver && viewModel.canUndo)
+                else if (!game.isOver && viewModel.canUndo)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: TextButton.icon(
