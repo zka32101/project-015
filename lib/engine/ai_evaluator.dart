@@ -12,6 +12,12 @@ class AdvancedEvaluator {
   static const int kingSafetyWeight = 80;
   static const int captureWeight = 150;
 
+  // Board positional weights (corners > edges > center)
+  static const int cornerWeight = 150;      // Corners are very valuable
+  static const int edgeWeight = 50;         // Edge squares are valuable
+  static const int xSquareWeight = -30;     // X-squares (risky, adjacent to corners)
+  static const int cSquareWeight = -20;     // C-squares (somewhat risky)
+
   /// Comprehensive board evaluation considering multiple strategic factors
   static int evaluate(Board board, Owner owner) {
     int score = 0;
@@ -25,7 +31,10 @@ class AdvancedEvaluator {
     // 3. Position control (center advantage)
     score += _evaluatePositionControl(board, owner);
 
-    // 4. Piece mobility (more moves = better)
+    // 4. Strategic position control (corners, edges, X-squares)
+    score += _evaluateStrategicPosition(board, owner);
+
+    // 5. Piece mobility (more moves = better)
     score += _evaluateMobility(board, owner);
 
     return score;
@@ -95,6 +104,54 @@ class AdvancedEvaluator {
     return (centerPieces - opponentCenterPieces) * centerControlWeight;
   }
 
+  /// Evaluate strategic position control (corners, edges, dangerous squares)
+  /// This is crucial for Reversia strategy: corners are safe and permanent,
+  /// edges are valuable, while X-squares and C-squares are risky.
+  static int _evaluateStrategicPosition(Board board, Owner owner) {
+    int score = 0;
+
+    for (int r = 0; r < 6; r++) {
+      for (int c = 0; c < 6; c++) {
+        final piece = board.at(Square(r, c));
+        if (piece == null || piece.owner != owner) continue;
+
+        final squareType = _classifySquare(r, c);
+        score += squareType.weight;
+      }
+    }
+
+    return score;
+  }
+
+  /// Classify a square's strategic importance in Reversia
+  static _SquareType _classifySquare(int row, int col) {
+    // Corners: (0,0), (0,5), (5,0), (5,5) - very safe and permanent
+    if ((row == 0 || row == 5) && (col == 0 || col == 5)) {
+      return _SquareType(name: 'corner', weight: cornerWeight);
+    }
+
+    // X-squares: diagonally adjacent to corners - risky! (e.g., (1,1) near (0,0))
+    if ((row == 1 || row == 4) && (col == 1 || col == 4)) {
+      return _SquareType(name: 'x_square', weight: xSquareWeight);
+    }
+
+    // C-squares: orthogonally adjacent to corners - somewhat risky (e.g., (0,1) near (0,0))
+    if ((row == 0 || row == 5) && (col == 1 || col == 4)) {
+      return _SquareType(name: 'c_square_edge', weight: cSquareWeight);
+    }
+    if ((row == 1 || row == 4) && (col == 0 || col == 5)) {
+      return _SquareType(name: 'c_square_edge', weight: cSquareWeight);
+    }
+
+    // Edge squares (row or col = 0 or 5, but not corner/C-square)
+    if (row == 0 || row == 5 || col == 0 || col == 5) {
+      return _SquareType(name: 'edge', weight: edgeWeight);
+    }
+
+    // Interior squares
+    return _SquareType(name: 'interior', weight: 0);
+  }
+
   /// Evaluate piece mobility (how many moves available)
   static int _evaluateMobility(Board board, Owner owner) {
     final myMoves = MoveGenerator.legalMovesFor(board, owner).length;
@@ -126,6 +183,14 @@ class AdvancedEvaluator {
 
     return score;
   }
+}
+
+/// Simple data class for square type classification
+class _SquareType {
+  final String name;
+  final int weight;
+
+  _SquareType({required this.name, required this.weight});
 }
 
 /// Difficulty-specific AI strategies
