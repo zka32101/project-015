@@ -291,15 +291,11 @@ class GameViewModel extends Notifier<GameViewState> {
     final affected = <Square>[];
     final target = board.at(move.to);
 
-    // If capturing, the target piece is affected
-    if (target != null) {
-      affected.add(move.to);
-    }
+    // The source square is always affected (piece moves from here)
+    affected.add(move.from);
 
-    // The moving piece itself changes if it flips
-    if (piece.type != PieceType.king && target == null) {
-      affected.add(move.from);
-    }
+    // The destination square is always affected (piece moves here or captures here)
+    affected.add(move.to);
 
     return affected;
   }
