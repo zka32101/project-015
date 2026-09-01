@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'ai_evaluator.dart';
+import 'ai_thinking_info.dart';
 import 'board.dart';
 import 'models.dart';
 import 'move_generator.dart';
@@ -31,6 +33,61 @@ class ReversiaAi {
         return _pickGreedy(board, owner, moves);
       case AiDifficulty.hard:
         return _pickMinimax(board, owner, moves);
+    }
+  }
+
+  /// Picks a move and returns detailed thinking information including
+  /// evaluation score and search depth. Useful for displaying AI thinking.
+  AiMoveResult pickMoveWithThinking(Board board, Owner owner) {
+    final startTime = DateTime.now();
+    final moves = MoveGenerator.legalMovesFor(board, owner);
+
+    if (moves.isEmpty) {
+      final thinkingTime = DateTime.now().difference(startTime);
+      return AiMoveResult(
+        move: null,
+        evaluationScore: null,
+        searchDepth: 0,
+        thinkingTime: thinkingTime,
+      );
+    }
+
+    switch (difficulty) {
+      case AiDifficulty.easy:
+        final move = _pickEasy(board, owner, moves);
+        final thinkingTime = DateTime.now().difference(startTime);
+        final score = move != null
+            ? AiStrategy.evaluateMoveEasy(board, move, owner)
+            : null;
+        return AiMoveResult(
+          move: move,
+          evaluationScore: score,
+          searchDepth: 1,
+          thinkingTime: thinkingTime,
+        );
+
+      case AiDifficulty.medium:
+        final move = _pickGreedy(board, owner, moves);
+        final thinkingTime = DateTime.now().difference(startTime);
+        final score = move != null
+            ? AiStrategy.evaluateMoveMedium(board, move, owner)
+            : null;
+        return AiMoveResult(
+          move: move,
+          evaluationScore: score,
+          searchDepth: 1,
+          thinkingTime: thinkingTime,
+        );
+
+      case AiDifficulty.hard:
+        final result = _pickMinimaxWithThinking(board, owner, moves);
+        final thinkingTime = DateTime.now().difference(startTime);
+        return AiMoveResult(
+          move: result['move'] as Move?,
+          evaluationScore: result['score'] as int?,
+          searchDepth: _hardSearchDepth,
+          thinkingTime: thinkingTime,
+        );
     }
   }
 
@@ -89,6 +146,31 @@ class ReversiaAi {
       }
     }
     return best ?? moves[random.nextInt(moves.length)];
+  }
+
+  /// Minimax with thinking that returns both move and evaluation score.
+  Map<String, Object?> _pickMinimaxWithThinking(Board board, Owner owner, List<Move> moves) {
+    Move? best;
+    var bestScore = -_infinity;
+    for (final move in moves) {
+      final childBoard = _applyToBoard(board, move, owner);
+      final score = -_negamax(
+        childBoard,
+        owner.opponent,
+        _hardSearchDepth - 1,
+        -_infinity,
+        _infinity,
+      );
+      if (score > bestScore) {
+        bestScore = score;
+        best = move;
+      }
+    }
+    final finalMove = best ?? moves[random.nextInt(moves.length)];
+    return {
+      'move': finalMove,
+      'score': bestScore == -_infinity ? null : bestScore,
+    };
   }
 
   static const _infinity = 1 << 20;

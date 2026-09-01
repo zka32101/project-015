@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/ai.dart';
+import '../engine/ai_thinking_info.dart';
 import '../engine/animation_effects.dart';
 import '../engine/board_theme.dart';
 import '../engine/enhanced_board_themes.dart';
@@ -204,26 +205,37 @@ class GameScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                // AI thinking indicator
+                // AI thinking indicator with detailed information
                 if (viewState.isAiThinking)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    child: Column(
                       children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(theme.accentGold),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation(theme.accentGold),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '考え中...',
+                              style: TextStyle(color: theme.accentGold, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                        if (viewState.aiThinkingInfo != null) ...[
+                          const SizedBox(height: 6),
+                          _AiThinkingDetails(
+                            thinkingInfo: viewState.aiThinkingInfo!,
+                            theme: theme,
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '考え中...',
-                          style: TextStyle(color: theme.accentGold, fontSize: 14),
-                        ),
+                        ],
                       ],
                     ),
                   )
@@ -1178,6 +1190,64 @@ class _PieceCircle extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Displays detailed AI thinking information including search depth,
+/// evaluation score, and thinking time.
+class _AiThinkingDetails extends StatelessWidget {
+  final AiMoveResult thinkingInfo;
+  final BoardTheme theme;
+
+  const _AiThinkingDetails({
+    required this.thinkingInfo,
+    required this.theme,
+  });
+
+  String _formatEvaluation(int? score) {
+    if (score == null) return '—';
+    if (score > 1000) return '✓ 勝ち';
+    if (score < -1000) return '✗ 敗け';
+    return score > 0 ? '+${score ~/ 100}' : '${score ~/ 100}';
+  }
+
+  String _formatThinkingTime(Duration duration) {
+    if (duration.inMilliseconds < 1000) {
+      return '${duration.inMilliseconds}ms';
+    }
+    return '${(duration.inMilliseconds / 1000).toStringAsFixed(1)}s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          '深さ: ${thinkingInfo.searchDepth}',
+          style: TextStyle(
+            color: theme.accentGold.withValues(alpha: 0.7),
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          '評価: ${_formatEvaluation(thinkingInfo.evaluationScore)}',
+          style: TextStyle(
+            color: theme.accentGold.withValues(alpha: 0.7),
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          _formatThinkingTime(thinkingInfo.thinkingTime),
+          style: TextStyle(
+            color: theme.accentGold.withValues(alpha: 0.7),
+            fontSize: 12,
+          ),
+        ),
+      ],
     );
   }
 }

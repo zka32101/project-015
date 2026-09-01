@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/ai.dart';
+import '../engine/ai_thinking_info.dart';
 import '../engine/game_state.dart';
 import '../engine/models.dart';
 import '../engine/move_generator.dart';
@@ -25,6 +26,7 @@ class GameViewState {
   final int rankPoints;
   final GameStatistics statistics;
   final bool isAiThinking;
+  final AiMoveResult? aiThinkingInfo;
 
   const GameViewState({
     required this.game,
@@ -36,6 +38,7 @@ class GameViewState {
     this.rankPoints = 0,
     GameStatistics? statistics,
     this.isAiThinking = false,
+    this.aiThinkingInfo,
   }) : statistics = statistics ?? GameStatistics();
 
   /// Squares the side NOT currently to move could land on next turn --
@@ -75,6 +78,8 @@ class GameViewState {
     int? rankPoints,
     GameStatistics? statistics,
     bool? isAiThinking,
+    AiMoveResult? aiThinkingInfo,
+    bool clearAiThinkingInfo = false,
   }) {
     return GameViewState(
       game: game,
@@ -87,6 +92,7 @@ class GameViewState {
       rankPoints: rankPoints ?? this.rankPoints,
       statistics: statistics ?? this.statistics,
       isAiThinking: isAiThinking ?? this.isAiThinking,
+      aiThinkingInfo: clearAiThinkingInfo ? null : (aiThinkingInfo ?? this.aiThinkingInfo),
     );
   }
 
@@ -98,6 +104,7 @@ class GameViewState {
       showThreatPreview: showThreatPreview,
       rankPoints: rankPoints,
       statistics: statistics,
+      aiThinkingInfo: aiThinkingInfo,
     );
   }
 }
@@ -255,15 +262,20 @@ class GameViewModel extends Notifier<GameViewState> {
       if (s.aiDifficulty == null) return;
 
       final ai = ReversiaAi(s.aiDifficulty!);
-      final move = ai.pickMove(s.game.board, aiControlledOwner);
+      final result = ai.pickMoveWithThinking(s.game.board, aiControlledOwner);
+      final move = result.move;
+
       if (move == null) {
         s.game.declareNoMovesLoss();
-        state = s._carryMeta(s.game, lastMove: s.lastMove).copyWith(isAiThinking: false);
+        state = s._carryMeta(s.game, lastMove: s.lastMove)
+            .copyWith(isAiThinking: false, aiThinkingInfo: result);
         _maybeRecordGameStatistics();
         return;
       }
+
       s.game.applyMove(move);
-      state = s._carryMeta(s.game, lastMove: move).copyWith(isAiThinking: false);
+      state = s._carryMeta(s.game, lastMove: move)
+          .copyWith(isAiThinking: false, aiThinkingInfo: result);
       _autoFailIfNoMoves();
       _maybeRecordAiWin();
     });
