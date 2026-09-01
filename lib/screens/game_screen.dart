@@ -151,7 +151,7 @@ class GameScreen extends ConsumerWidget {
                 );
               } else {
                 // For in-progress games, show the simple sheet
-                _showKifuSheet(context, game, theme);
+                _showKifuSheet(context, game, theme, viewState.aiDifficulty);
               }
             },
           ),
@@ -187,7 +187,7 @@ class GameScreen extends ConsumerWidget {
           children: [
             Column(
               children: [
-                _TurnBanner(game: game, theme: theme),
+                _TurnBanner(game: game, theme: theme, aiDifficulty: viewState.aiDifficulty),
                 Expanded(
                   child: Center(
                     child: Padding(
@@ -236,18 +236,36 @@ class GameScreen extends ConsumerWidget {
 /// Section3 Must#5 "対局リプレイ（棋譜保存・見返し）" -- a simple scrollable move
 /// list, opened on demand rather than a full replay-scrubber (no separate
 /// replay engine yet; GameState.moveHistory already has everything needed).
-void _showKifuSheet(BuildContext context, GameState game, BoardTheme theme) {
+void _showKifuSheet(BuildContext context, GameState game, BoardTheme theme, AiDifficulty? aiDifficulty) {
   showModalBottomSheet(
     context: context,
     backgroundColor: theme.woodDark,
-    builder: (context) => _KifuSheet(moveHistory: game.moveHistory, theme: theme),
+    builder: (context) => _KifuSheet(
+      moveHistory: game.moveHistory,
+      theme: theme,
+      aiDifficulty: aiDifficulty,
+    ),
   );
 }
 
 class _KifuSheet extends StatelessWidget {
   final List<Move> moveHistory;
   final BoardTheme theme;
-  const _KifuSheet({required this.moveHistory, required this.theme});
+  final AiDifficulty? aiDifficulty;
+
+  const _KifuSheet({
+    required this.moveHistory,
+    required this.theme,
+    this.aiDifficulty,
+  });
+
+  String _getDifficultyLabel(AiDifficulty difficulty) {
+    return switch (difficulty) {
+      AiDifficulty.easy => 'かんたん',
+      AiDifficulty.medium => 'ふつう',
+      AiDifficulty.hard => 'つよい',
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -258,9 +276,34 @@ class _KifuSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('棋譜',
-                style: TextStyle(
-                    color: theme.accentGold, fontSize: 18, fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('棋譜',
+                    style: TextStyle(
+                        color: theme.accentGold,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
+                // Show AI difficulty if applicable
+                if (aiDifficulty != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: theme.backPieceColor.withValues(alpha: 0.2),
+                      border: Border.all(color: theme.backPieceColor, width: 1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'AI: ${_getDifficultyLabel(aiDifficulty!)}',
+                      style: TextStyle(
+                        color: theme.backPieceColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             const SizedBox(height: 8),
             if (moveHistory.isEmpty)
               const Padding(
@@ -367,7 +410,21 @@ class _VictoryFlashState extends State<_VictoryFlash> with SingleTickerProviderS
 class _TurnBanner extends StatelessWidget {
   final GameState game;
   final BoardTheme theme;
-  const _TurnBanner({required this.game, required this.theme});
+  final AiDifficulty? aiDifficulty;
+
+  const _TurnBanner({
+    required this.game,
+    required this.theme,
+    this.aiDifficulty,
+  });
+
+  String _getDifficultyLabel(AiDifficulty difficulty) {
+    return switch (difficulty) {
+      AiDifficulty.easy => 'かんたん',
+      AiDifficulty.medium => 'ふつう',
+      AiDifficulty.hard => 'つよい',
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -396,6 +453,27 @@ class _TurnBanner extends StatelessWidget {
                 isA ? '藍陣営の番' : '朱陣営の番',
                 style: const TextStyle(color: Colors.white, fontSize: 16),
               ),
+              // Show AI difficulty indicator for AI-controlled player
+              if (aiDifficulty != null && !isA)
+                Padding(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: theme.backPieceColor.withValues(alpha: 0.2),
+                      border: Border.all(color: theme.backPieceColor, width: 1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'AI: ${_getDifficultyLabel(aiDifficulty!)}',
+                      style: TextStyle(
+                        color: theme.backPieceColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
               const SizedBox(width: 10),
               Text(
                 '（${game.plyCount}/$plyLimit手）',
