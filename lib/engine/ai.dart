@@ -19,6 +19,8 @@ class ReversiaAi {
   final AiDifficulty difficulty;
   final Random random;
   static const int _hardSearchDepth = 4;
+  static const int _endgameSearchDepth = 8;  // Deeper search in endgame
+  static const int _endgamePieceThreshold = 20;  // Activate endgame when ≤20 total pieces
 
   ReversiaAi(this.difficulty, [Random? random]) : random = random ?? Random();
 
@@ -85,7 +87,7 @@ class ReversiaAi {
         return AiMoveResult(
           move: result['move'] as Move?,
           evaluationScore: result['score'] as int?,
-          searchDepth: _hardSearchDepth,
+          searchDepth: result['depth'] as int? ?? _hardSearchDepth,
           thinkingTime: thinkingTime,
         );
     }
@@ -129,6 +131,9 @@ class ReversiaAi {
   }
 
   Move _pickMinimax(Board board, Owner owner, List<Move> moves) {
+    // Determine search depth based on game phase
+    final depth = _getSearchDepth(board);
+
     Move? best;
     var bestScore = -_infinity;
     for (final move in moves) {
@@ -136,7 +141,7 @@ class ReversiaAi {
       final score = -_negamax(
         childBoard,
         owner.opponent,
-        _hardSearchDepth - 1,
+        depth - 1,
         -_infinity,
         _infinity,
       );
@@ -148,8 +153,25 @@ class ReversiaAi {
     return best ?? moves[random.nextInt(moves.length)];
   }
 
+  /// Determine search depth based on game phase (endgame vs opening/middlegame).
+  /// Endgame uses deeper search for more optimal play when fewer pieces remain.
+  int _getSearchDepth(Board board) {
+    final totalPieces = board.pieceCount(Owner.playerA) + board.pieceCount(Owner.playerB);
+
+    // Endgame: when 20 or fewer pieces remain, search deeper for optimal play
+    if (totalPieces <= _endgamePieceThreshold) {
+      return _endgameSearchDepth;
+    }
+
+    // Opening/middlegame: standard search depth
+    return _hardSearchDepth;
+  }
+
   /// Minimax with thinking that returns both move and evaluation score.
   Map<String, Object?> _pickMinimaxWithThinking(Board board, Owner owner, List<Move> moves) {
+    // Determine search depth based on game phase
+    final depth = _getSearchDepth(board);
+
     Move? best;
     var bestScore = -_infinity;
     for (final move in moves) {
@@ -157,7 +179,7 @@ class ReversiaAi {
       final score = -_negamax(
         childBoard,
         owner.opponent,
-        _hardSearchDepth - 1,
+        depth - 1,
         -_infinity,
         _infinity,
       );
@@ -170,6 +192,7 @@ class ReversiaAi {
     return {
       'move': finalMove,
       'score': bestScore == -_infinity ? null : bestScore,
+      'depth': depth,  // Return actual search depth used
     };
   }
 
