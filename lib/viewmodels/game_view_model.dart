@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/ai.dart';
 import '../engine/ai_thinking_info.dart';
+import '../engine/game_notation.dart';
 import '../engine/game_state.dart';
 import '../engine/models.dart';
 import '../engine/move_analyzer.dart';
@@ -347,6 +348,60 @@ class GameViewModel extends Notifier<GameViewState> {
       );
     } catch (_) {
       return null;
+    }
+  }
+
+  /// Get the current game in standard notation format
+  String getGameNotation() {
+    return GameNotation.gameToNotation(state.game.moveHistory);
+  }
+
+  /// Get formatted move history for display
+  String getFormattedMoveHistory() {
+    return GameNotation.formatMoveHistory(state.game.moveHistory);
+  }
+
+  /// Get current game state description
+  String getGameStateDescription() {
+    return GameNotation.getBoardStateDescription(
+      state.game.moveHistory.length,
+      state.game.moveHistory.length + 10, // Estimate based on typical game length
+    );
+  }
+
+  /// Create a game record for storage/replay
+  GameRecord createGameRecord() {
+    final playerBName = state.aiDifficulty != null
+        ? 'AI (${state.aiDifficulty!.name})'
+        : 'Player B';
+
+    return GameRecord(
+      playerAName: 'Player A (You)',
+      playerBName: playerBName,
+      aiDifficulty: state.aiDifficulty?.name,
+      moves: state.game.moveHistory,
+      playedAt: DateTime.now(),
+      result: state.game.isOver ? _getGameResultString() : null,
+      duration: null, // Could track if we store start time
+    );
+  }
+
+  String _getGameResultString() {
+    switch (state.game.result) {
+      case GameResult.playerAWins:
+        final pieceCountA = state.game.board.pieceCount(Owner.playerA);
+        final pieceCountB = state.game.board.pieceCount(Owner.playerB);
+        return 'Player A (Black) wins $pieceCountA-$pieceCountB';
+      case GameResult.playerBWins:
+        final pieceCountA = state.game.board.pieceCount(Owner.playerA);
+        final pieceCountB = state.game.board.pieceCount(Owner.playerB);
+        return 'Player B (White) wins $pieceCountB-$pieceCountA';
+      case GameResult.draw:
+        return 'Draw';
+      case GameResult.inProgress:
+        return 'In progress';
+      default:
+        return 'Unknown result';
     }
   }
 }
