@@ -6,6 +6,7 @@ import 'ai_thinking_info.dart';
 import 'board.dart';
 import 'models.dart';
 import 'move_generator.dart';
+import 'opening_book.dart';
 
 enum AiDifficulty { easy, medium, hard }
 
@@ -94,6 +95,15 @@ class ReversiaAi {
   }
 
   Move _pickEasy(Board board, Owner owner, List<Move> moves) {
+    // In opening, give 50% chance to use opening book (helps easy AI learn openings)
+    final moveNumber = _getMoveNumber(board);
+    if (OpeningBook.isInOpeningBook(moveNumber) && random.nextDouble() < 0.5) {
+      final bookMove = _selectOpeningMove(moves, moveNumber);
+      if (bookMove != null) {
+        return bookMove;
+      }
+    }
+
     // Easy: 80% random, 20% smart (prefer captures)
     if (random.nextDouble() < 0.8) {
       return moves[random.nextInt(moves.length)];
@@ -115,6 +125,15 @@ class ReversiaAi {
   }
 
   Move _pickGreedy(Board board, Owner owner, List<Move> moves) {
+    // Check opening book for early game moves (medium AI always prefers book moves)
+    final moveNumber = _getMoveNumber(board);
+    if (OpeningBook.isInOpeningBook(moveNumber)) {
+      final bookMove = _selectOpeningMove(moves, moveNumber);
+      if (bookMove != null) {
+        return bookMove;
+      }
+    }
+
     // Use advanced evaluator for greedy move selection
     Move? bestMove;
     var bestScore = -9999;
@@ -131,6 +150,15 @@ class ReversiaAi {
   }
 
   Move _pickMinimax(Board board, Owner owner, List<Move> moves) {
+    // Check opening book for early game moves
+    final moveNumber = _getMoveNumber(board);
+    if (OpeningBook.isInOpeningBook(moveNumber)) {
+      final bookMove = _selectOpeningMove(moves, moveNumber);
+      if (bookMove != null) {
+        return bookMove;
+      }
+    }
+
     // Determine search depth based on game phase
     final depth = _getSearchDepth(board);
 
@@ -167,8 +195,58 @@ class ReversiaAi {
     return _hardSearchDepth;
   }
 
+  /// Calculate the move number in the game (1-based, counting full moves).
+  /// Counts total pieces minus initial 4 setup pieces, divided by 2 for turns per player.
+  int _getMoveNumber(Board board) {
+    final totalPieces = board.pieceCount(Owner.playerA) + board.pieceCount(Owner.playerB);
+    // In 6x6 Reversia: start with 4 pieces (2 per player)
+    // Each move by one player adds 1 piece (captures convert opponent pieces)
+    // moveHistory.length gives us the number of moves made so far
+    return board.moveHistory.length + 1;
+  }
+
+  /// Select a move from the opening book if available.
+  /// Prefers highest-strength moves but picks randomly among strong options.
+  Move? _selectOpeningMove(List<Move> legalMoves, int moveNumber) {
+    final bookMoves = OpeningBook.getOpeningMoves(moveNumber);
+    if (bookMoves.isEmpty) return null;
+
+    // Filter book moves to only legal moves in current position
+    final validBookMoves = bookMoves
+        .where((bookMove) => legalMoves.any((legal) =>
+            legal.from == bookMove.from && legal.to == bookMove.to))
+        .toList();
+
+    if (validBookMoves.isEmpty) return null;
+
+    // For medium difficulty, pick strongest. For hard, add some randomness.
+    if (difficulty == AiDifficulty.medium) {
+      return validBookMoves.first; // Best move
+    } else {
+      // Hard: 70% pick strongest, 30% pick random strong move
+      if (random.nextDouble() < 0.7) {
+        return validBookMoves.first;
+      } else {
+        return validBookMoves[random.nextInt(validBookMoves.length)];
+      }
+    }
+  }
+
   /// Minimax with thinking that returns both move and evaluation score.
   Map<String, Object?> _pickMinimaxWithThinking(Board board, Owner owner, List<Move> moves) {
+    // Check opening book for early game moves
+    final moveNumber = _getMoveNumber(board);
+    if (OpeningBook.isInOpeningBook(moveNumber)) {
+      final bookMove = _selectOpeningMove(moves, moveNumber);
+      if (bookMove != null) {
+        return {
+          'move': bookMove,
+          'score': null,  // Opening book moves don't have evaluation scores
+          'depth': 1,     // Treat as shallow lookup
+        };
+      }
+    }
+
     // Determine search depth based on game phase
     final depth = _getSearchDepth(board);
 
