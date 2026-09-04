@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/ai.dart';
 import '../engine/ai_thinking_info.dart';
+import '../engine/game_analytics.dart';
 import '../engine/game_notation.dart';
 import '../engine/game_state.dart';
 import '../engine/game_undo_redo.dart';
@@ -18,6 +19,7 @@ import '../engine/statistics.dart';
 const aiControlledOwner = Owner.playerB;
 const rankPointsPrefsKey = 'rank_points';
 const gameStatisticsPrefsKey = 'game_statistics';
+const gameSessionHistoryPrefsKey = 'game_session_history';
 
 class GameViewState {
   final GameState game;
@@ -28,8 +30,10 @@ class GameViewState {
   final bool showThreatPreview;
   final int rankPoints;
   final GameStatistics statistics;
+  final List<GameSession> sessionHistory;
   final bool isAiThinking;
   final AiMoveResult? aiThinkingInfo;
+  final DateTime gameStartTime;
 
   const GameViewState({
     required this.game,
@@ -40,9 +44,13 @@ class GameViewState {
     this.showThreatPreview = false,
     this.rankPoints = 0,
     GameStatistics? statistics,
+    List<GameSession>? sessionHistory,
     this.isAiThinking = false,
     this.aiThinkingInfo,
-  }) : statistics = statistics ?? GameStatistics();
+    DateTime? gameStartTime,
+  })  : statistics = statistics ?? GameStatistics(),
+        sessionHistory = sessionHistory ?? [],
+        gameStartTime = gameStartTime ?? DateTime.now();
 
   /// Squares the side NOT currently to move could land on next turn --
   /// design doc v1.1 "透け読みモード" (opponent-threat preview), toggle-able.
@@ -80,9 +88,11 @@ class GameViewState {
     bool? showThreatPreview,
     int? rankPoints,
     GameStatistics? statistics,
+    List<GameSession>? sessionHistory,
     bool? isAiThinking,
     AiMoveResult? aiThinkingInfo,
     bool clearAiThinkingInfo = false,
+    DateTime? gameStartTime,
   }) {
     return GameViewState(
       game: game,
@@ -94,8 +104,10 @@ class GameViewState {
       showThreatPreview: showThreatPreview ?? this.showThreatPreview,
       rankPoints: rankPoints ?? this.rankPoints,
       statistics: statistics ?? this.statistics,
+      sessionHistory: sessionHistory ?? this.sessionHistory,
       isAiThinking: isAiThinking ?? this.isAiThinking,
       aiThinkingInfo: clearAiThinkingInfo ? null : (aiThinkingInfo ?? this.aiThinkingInfo),
+      gameStartTime: gameStartTime ?? this.gameStartTime,
     );
   }
 
@@ -107,7 +119,9 @@ class GameViewState {
       showThreatPreview: showThreatPreview,
       rankPoints: rankPoints,
       statistics: statistics,
+      sessionHistory: sessionHistory,
       aiThinkingInfo: aiThinkingInfo,
+      gameStartTime: gameStartTime,
     );
   }
 }
@@ -124,6 +138,7 @@ class GameViewModel extends Notifier<GameViewState> {
   GameViewState build() {
     _loadRankPoints();
     _loadStatistics();
+    _loadSessionHistory();
     final gameState = GameState.initial();
     _undoRedoManager = GameUndoRedoManager(gameState);
     return GameViewState(game: gameState);
@@ -150,10 +165,63 @@ class GameViewModel extends Notifier<GameViewState> {
     }
   }
 
+  Future<void> _loadSessionHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final historyJson = prefs.getString(gameSessionHistoryPrefsKey);
+    if (historyJson != null) {
+      try {
+        final List<dynamic> decoded = jsonDecode(historyJson);
+        final sessions = decoded
+            .map((json) => GameSession.fromJson(json as Map<String, dynamic>))
+            .toList();
+        state = state.copyWith(sessionHistory: sessions);
+      } catch (e) {
+        // If deserialization fails, start fresh
+        state = state.copyWith(sessionHistory: []);
+      }
+    }
+  }
+
   Future<void> _saveStatistics() async {
     final prefs = await SharedPreferences.getInstance();
     final statsJson = jsonEncode(state.statistics.toJson());
     await prefs.setString(gameStatisticsPrefsKey, statsJson);
+  }
+
+  Future<void> _saveSessionHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final historyJson = jsonEncode(
+      state.sessionHistory.map((s) => s.toJson()).toList(),
+    );
+    await prefs.setString(gameSessionHistoryPrefsKey, historyJson);
+  }
+
+  void _recordGameSession() {
+    final s = state;
+    if (!s.game.isOver) return;
+
+    final duration = DateTime.now().difference(s.gameStartTime);
+    final playerAWon = s.game.result == GameResult.playerAWins;
+
+    // Calculate win strength (0.0 to 1.0) based on piece count
+    final pieceCountA = s.game.board.pieceCount(Owner.playerA);
+    final pieceCountB = s.game.board.pieceCount(Owner.playerB);
+    final totalPieces = pieceCountA + pieceCountB;
+    final winStrength =
+        totalPieces > 0 ? (pieceCountA.toDouble() / totalPieces) : 0.5;
+
+    final session = GameSession(
+      playedAt: s.gameStartTime,
+      playerAWon: playerAWon,
+      aiDifficulty: s.aiDifficulty?.name,
+      movesCount: s.game.moveHistory.length,
+      duration: duration,
+      playerAWinStrength: winStrength,
+    );
+
+    final updatedHistory = [...s.sessionHistory, session];
+    state = s.copyWith(sessionHistory: updatedHistory);
+    _saveSessionHistory();
   }
 
   void selectSquare(Square square) {
@@ -208,7 +276,7 @@ class GameViewModel extends Notifier<GameViewState> {
     _gameStatsRecordedThisGame = false;
     final newGameState = GameState.initial();
     _undoRedoManager = GameUndoRedoManager(newGameState);
-    state = state._carryMeta(newGameState);
+    state = state._carryMeta(newGameState).copyWith(gameStartTime: DateTime.now());
     _maybeScheduleAiMove();
   }
 
@@ -236,6 +304,7 @@ class GameViewModel extends Notifier<GameViewState> {
     );
     state = s.copyWith(statistics: s.statistics);
     _saveStatistics();
+    _recordGameSession();
   }
 
   /// Persists rank-ladder points the first (and only the first) time a given
@@ -446,6 +515,14 @@ class GameViewModel extends Notifier<GameViewState> {
       playedAt: DateTime.now(),
       result: state.game.isOver ? _getGameResultString() : null,
       duration: null, // Could track if we store start time
+    );
+  }
+
+  /// Get comprehensive game analytics
+  GameAnalytics getGameAnalytics() {
+    return GameAnalytics(
+      baseStats: state.statistics,
+      sessionHistory: state.sessionHistory,
     );
   }
 
