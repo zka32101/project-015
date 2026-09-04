@@ -7,6 +7,7 @@ import '../engine/ai.dart';
 import '../engine/ai_thinking_info.dart';
 import '../engine/game_notation.dart';
 import '../engine/game_state.dart';
+import '../engine/game_undo_redo.dart';
 import '../engine/models.dart';
 import '../engine/move_analyzer.dart';
 import '../engine/move_generator.dart';
@@ -117,12 +118,15 @@ class GameViewState {
 class GameViewModel extends Notifier<GameViewState> {
   bool _winRecordedThisGame = false;
   bool _gameStatsRecordedThisGame = false;
+  late GameUndoRedoManager _undoRedoManager;
 
   @override
   GameViewState build() {
     _loadRankPoints();
     _loadStatistics();
-    return GameViewState(game: GameState.initial());
+    final gameState = GameState.initial();
+    _undoRedoManager = GameUndoRedoManager(gameState);
+    return GameViewState(game: gameState);
   }
 
   Future<void> _loadRankPoints() async {
@@ -163,6 +167,8 @@ class GameViewModel extends Notifier<GameViewState> {
     if (s.selected != null && s.legalDestinations.contains(square)) {
       final move = Move(s.selected!, square);
       s.game.applyMove(move);
+      // Clear redo history when a new move is made
+      _undoRedoManager.clearRedoHistory();
       state = s._carryMeta(s.game, lastMove: move);
       _autoFailIfNoMoves();
       _maybeRecordAiWin();
@@ -200,7 +206,9 @@ class GameViewModel extends Notifier<GameViewState> {
   void restart() {
     _winRecordedThisGame = false;
     _gameStatsRecordedThisGame = false;
-    state = state._carryMeta(GameState.initial());
+    final newGameState = GameState.initial();
+    _undoRedoManager = GameUndoRedoManager(newGameState);
+    state = state._carryMeta(newGameState);
     _maybeScheduleAiMove();
   }
 
@@ -276,6 +284,7 @@ class GameViewModel extends Notifier<GameViewState> {
       }
 
       s.game.applyMove(move);
+      _undoRedoManager.clearRedoHistory();
       state = s._carryMeta(s.game, lastMove: move)
           .copyWith(isAiThinking: false, aiThinkingInfo: result);
       _autoFailIfNoMoves();
@@ -302,26 +311,80 @@ class GameViewModel extends Notifier<GameViewState> {
     return affected;
   }
 
-  /// Whether the last move can be undone (simple check: not over, have moves)
-  bool get canUndo => !state.game.isOver && state.game.moveHistory.isNotEmpty;
+  /// Get the undo/redo manager for the current game
+  GameUndoRedoManager? getUndoRedoManager() => _undoRedoManager;
 
-  /// Undo the last move by restarting and replaying all but the last move
+  /// Whether the last move can be undone
+  bool get canUndo => _undoRedoManager.canUndo;
+
+  /// Whether a move can be redone
+  bool get canRedo => _undoRedoManager.canRedo;
+
+  /// Number of moves that can be undone
+  int get undoCount => _undoRedoManager.undoCount;
+
+  /// Number of moves that can be redone
+  int get redoCount => _undoRedoManager.redoCount;
+
+  /// Undo the last move
   void undoLastMove() {
     final s = state;
-    if (s.game.moveHistory.isEmpty) return;
+    if (!_undoRedoManager.canUndo) return;
 
-    // Create a fresh game
-    final newGame = GameState.initial();
-    final moves = s.game.moveHistory;
-
-    // Replay all moves except the last one
-    for (int i = 0; i < moves.length - 1; i++) {
-      newGame.applyMove(moves[i]);
+    if (_undoRedoManager.undo()) {
+      final previousMove = s.game.moveHistory.length >= 1 ? s.game.moveHistory.last : null;
+      state = s._carryMeta(s.game, lastMove: previousMove);
     }
+  }
 
-    // Update state with the game rolled back one move
-    final previousMove = moves.length >= 2 ? moves[moves.length - 2] : null;
-    state = s._carryMeta(newGame, lastMove: previousMove);
+  /// Redo the last undone move
+  void redoLastMove() {
+    final s = state;
+    if (!_undoRedoManager.canRedo) return;
+
+    if (_undoRedoManager.redo()) {
+      final lastMove = s.game.moveHistory.isNotEmpty ? s.game.moveHistory.last : null;
+      state = s._carryMeta(s.game, lastMove: lastMove);
+    }
+  }
+
+  /// Undo multiple moves
+  void undoMultipleMoves(int count) {
+    final s = state;
+    final undone = _undoRedoManager.undoMultiple(count);
+    if (undone > 0) {
+      final previousMove = s.game.moveHistory.length >= 1 ? s.game.moveHistory.last : null;
+      state = s._carryMeta(s.game, lastMove: previousMove);
+    }
+  }
+
+  /// Redo multiple moves
+  void redoMultipleMoves(int count) {
+    final s = state;
+    final redone = _undoRedoManager.redoMultiple(count);
+    if (redone > 0) {
+      final lastMove = s.game.moveHistory.isNotEmpty ? s.game.moveHistory.last : null;
+      state = s._carryMeta(s.game, lastMove: lastMove);
+    }
+  }
+
+  /// Undo all moves to the initial position
+  void undoAllMoves() {
+    final s = state;
+    final undone = _undoRedoManager.undoAll();
+    if (undone > 0) {
+      state = s._carryMeta(s.game, lastMove: null);
+    }
+  }
+
+  /// Redo all undone moves
+  void redoAllMoves() {
+    final s = state;
+    final redone = _undoRedoManager.redoAll();
+    if (redone > 0) {
+      final lastMove = s.game.moveHistory.isNotEmpty ? s.game.moveHistory.last : null;
+      state = s._carryMeta(s.game, lastMove: lastMove);
+    }
   }
 
   /// Get detailed analysis of all legal moves for current position
