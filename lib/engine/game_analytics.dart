@@ -158,7 +158,10 @@ class GameAnalytics {
   double getWinRateTrend(int lastNGames) {
     if (sessionHistory.length < 2) return 0.0;
 
-    final recentGames = sessionHistory.take(lastNGames).toList();
+    // Get the last N games (most recent first in our storage)
+    final recentGames = sessionHistory.length > lastNGames
+        ? sessionHistory.sublist(0, lastNGames)
+        : sessionHistory;
     if (recentGames.length < 2) return 0.0;
 
     // Calculate recent win rate

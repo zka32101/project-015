@@ -196,13 +196,13 @@ class ReversiaAi {
   }
 
   /// Calculate the move number in the game (1-based, counting full moves).
-  /// Counts total pieces minus initial 4 setup pieces, divided by 2 for turns per player.
+  /// Estimates move number from total piece count on the board.
   int _getMoveNumber(Board board) {
     final totalPieces = board.pieceCount(Owner.playerA) + board.pieceCount(Owner.playerB);
     // In 6x6 Reversia: start with 4 pieces (2 per player)
-    // Each move by one player adds 1 piece (captures convert opponent pieces)
-    // moveHistory.length gives us the number of moves made so far
-    return board.moveHistory.length + 1;
+    // Rough estimate: each move adds ~1 net piece on average
+    // moveNumber ≈ (totalPieces - 4) / 2 + 1, but we use totalPieces/2 as estimate
+    return (totalPieces / 2).ceil();
   }
 
   /// Select a move from the opening book if available.

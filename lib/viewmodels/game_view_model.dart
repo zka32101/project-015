@@ -503,18 +503,20 @@ class GameViewModel extends Notifier<GameViewState> {
 
   /// Create a game record for storage/replay
   GameRecord createGameRecord() {
-    final playerBName = state.aiDifficulty != null
-        ? 'AI (${state.aiDifficulty!.name})'
-        : 'Player B';
+    final pieceCountA = state.game.board.pieceCount(Owner.playerA);
+    final pieceCountB = state.game.board.pieceCount(Owner.playerB);
+    final duration = DateTime.now().difference(state.gameStartTime);
 
     return GameRecord(
-      playerAName: 'Player A (You)',
-      playerBName: playerBName,
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      playedAt: state.gameStartTime,
+      result: state.game.result,
       aiDifficulty: state.aiDifficulty?.name,
-      moves: state.game.moveHistory,
-      playedAt: DateTime.now(),
-      result: state.game.isOver ? _getGameResultString() : null,
-      duration: null, // Could track if we store start time
+      totalMoves: state.game.moveHistory.length,
+      durationSeconds: duration.inSeconds,
+      playerAPieceCount: pieceCountA,
+      playerBPieceCount: pieceCountB,
+      moveList: state.game.moveHistory.map((m) => m.toString()).toList(),
     );
   }
 
@@ -538,7 +540,7 @@ class GameViewModel extends Notifier<GameViewState> {
         return 'Player B (White) wins $pieceCountB-$pieceCountA';
       case GameResult.draw:
         return 'Draw';
-      case GameResult.inProgress:
+      case GameResult.ongoing:
         return 'In progress';
       default:
         return 'Unknown result';
