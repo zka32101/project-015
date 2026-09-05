@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'game_notation.dart';
@@ -168,7 +169,10 @@ class SavedGameInfo {
 
   /// Get display name for the game
   String getDisplayName() {
-    return '${record.playerAName} vs ${record.playerBName}';
+    final opponent = record.aiDifficulty != null
+        ? 'AI (${record.aiDifficulty})'
+        : 'Player B';
+    return 'You vs $opponent';
   }
 
   /// Get short time display (e.g., "2 hours ago")
@@ -185,7 +189,7 @@ class SavedGameInfo {
     } else if (diff.inDays < 7) {
       return '${diff.inDays}d ago';
     } else {
-      return record.getFormattedDate();
+      return DateFormat('MMM d, y').format(record.playedAt);
     }
   }
 }
