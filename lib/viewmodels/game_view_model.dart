@@ -141,19 +141,21 @@ class GameViewModel extends Notifier<GameViewState> {
     _loadRankPoints();
     _loadStatistics();
     _loadSessionHistory();
-    _initializeHistoryManager();
+    _initializeHistoryManager(); // Initialize asynchronously in background
     final gameState = GameState.initial();
     _undoRedoManager = GameUndoRedoManager(gameState);
     return GameViewState(game: gameState);
   }
 
   /// Initialize the game history manager
-  void _initializeHistoryManager() {
+  Future<void> _initializeHistoryManager() async {
     _historyManager = GameHistoryManager();
-    // Initialize asynchronously
-    SharedPreferences.getInstance().then((prefs) {
-      _historyManager.init(prefs);
-    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await _historyManager.init(prefs);
+    } catch (e) {
+      print('Error initializing history manager: $e');
+    }
   }
 
   Future<void> _loadRankPoints() async {
@@ -242,8 +244,8 @@ class GameViewModel extends Notifier<GameViewState> {
   /// Save the current game as a GameRecord to the history manager
   void _saveGameRecord() {
     final record = createGameRecord();
+    // Fire and forget - don't block game flow on record saving
     _historyManager.addRecord(record).catchError((e) {
-      // Silently handle errors in record saving - it shouldn't block game flow
       print('Error saving game record: $e');
     });
   }

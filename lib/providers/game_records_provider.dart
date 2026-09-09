@@ -85,22 +85,31 @@ class GameRecordsState {
 /// Notifier for managing game records
 class GameRecordsNotifier extends StateNotifier<GameRecordsState> {
   final GameHistoryManager _manager;
+  bool _initialized = false;
 
   GameRecordsNotifier(this._manager)
       : super(
           GameRecordsState(
-            allRecords: _manager.getAllRecords(),
-            filteredRecords: _manager.getAllRecords(),
+            allRecords: [],
+            filteredRecords: [],
             filter: const GameRecordFilter(),
             sort: GameRecordSort.newest,
           ),
         );
 
+  /// Check if manager is initialized
+  bool get isInitialized => _initialized;
+
   /// Load records from storage
   Future<void> loadRecords() async {
     state = state.copyWith(isLoading: true);
     try {
-      await _manager._loadRecords();
+      // Initialize manager if not already done
+      if (!_initialized) {
+        await _manager.init(await SharedPreferences.getInstance());
+        _initialized = true;
+      }
+
       final records = _manager.getAllRecords();
       _applyFiltersAndSort(records, state.filter, state.sort);
       state = state.copyWith(isLoading: false, error: null);
@@ -112,9 +121,19 @@ class GameRecordsNotifier extends StateNotifier<GameRecordsState> {
   /// Add a new game record
   Future<void> addRecord(GameRecord record) async {
     try {
+      // Ensure manager is initialized
+      if (!_initialized) {
+        await _manager.init(await SharedPreferences.getInstance());
+        _initialized = true;
+      }
+
       await _manager.addRecord(record);
       final records = _manager.getAllRecords();
       _applyFiltersAndSort(records, state.filter, state.sort);
+      // Clear error on success
+      if (state.error != null) {
+        state = state.copyWith(error: null);
+      }
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -123,9 +142,19 @@ class GameRecordsNotifier extends StateNotifier<GameRecordsState> {
   /// Delete a game record
   Future<void> deleteRecord(String id) async {
     try {
+      // Ensure manager is initialized
+      if (!_initialized) {
+        await _manager.init(await SharedPreferences.getInstance());
+        _initialized = true;
+      }
+
       await _manager.deleteRecord(id);
       final records = _manager.getAllRecords();
       _applyFiltersAndSort(records, state.filter, state.sort);
+      // Clear error on success
+      if (state.error != null) {
+        state = state.copyWith(error: null);
+      }
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -144,6 +173,12 @@ class GameRecordsNotifier extends StateNotifier<GameRecordsState> {
   /// Clear all records
   Future<void> clearAll() async {
     try {
+      // Ensure manager is initialized
+      if (!_initialized) {
+        await _manager.init(await SharedPreferences.getInstance());
+        _initialized = true;
+      }
+
       await _manager.clearAll();
       state = GameRecordsState(
         allRecords: [],
