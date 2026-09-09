@@ -7,6 +7,7 @@ import '../engine/ai.dart';
 import '../engine/ai_thinking_info.dart';
 import '../engine/game_analytics.dart';
 import '../engine/game_notation.dart';
+import '../engine/game_record.dart';
 import '../engine/game_state.dart';
 import '../engine/game_undo_redo.dart';
 import '../engine/models.dart';
@@ -133,15 +134,26 @@ class GameViewModel extends Notifier<GameViewState> {
   bool _winRecordedThisGame = false;
   bool _gameStatsRecordedThisGame = false;
   late GameUndoRedoManager _undoRedoManager;
+  late GameHistoryManager _historyManager;
 
   @override
   GameViewState build() {
     _loadRankPoints();
     _loadStatistics();
     _loadSessionHistory();
+    _initializeHistoryManager();
     final gameState = GameState.initial();
     _undoRedoManager = GameUndoRedoManager(gameState);
     return GameViewState(game: gameState);
+  }
+
+  /// Initialize the game history manager
+  void _initializeHistoryManager() {
+    _historyManager = GameHistoryManager();
+    // Initialize asynchronously
+    SharedPreferences.getInstance().then((prefs) {
+      _historyManager.init(prefs);
+    });
   }
 
   Future<void> _loadRankPoints() async {
@@ -222,6 +234,18 @@ class GameViewModel extends Notifier<GameViewState> {
     final updatedHistory = [...s.sessionHistory, session];
     state = s.copyWith(sessionHistory: updatedHistory);
     _saveSessionHistory();
+
+    // Also save to game history manager for record browsing
+    _saveGameRecord();
+  }
+
+  /// Save the current game as a GameRecord to the history manager
+  void _saveGameRecord() {
+    final record = createGameRecord();
+    _historyManager.addRecord(record).catchError((e) {
+      // Silently handle errors in record saving - it shouldn't block game flow
+      print('Error saving game record: $e');
+    });
   }
 
   void selectSquare(Square square) {

@@ -17,6 +17,7 @@ import '../engine/replay.dart';
 import '../engine/victory_effects.dart';
 import '../viewmodels/game_view_model.dart';
 import 'achievements_screen.dart';
+import 'game_records_browser.dart';
 import 'kifu_viewer_screen.dart';
 import 'puzzle_screen.dart';
 import 'rank_detail_screen.dart';
@@ -168,6 +169,16 @@ class GameScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('game_records_button'),
+            icon: const Icon(Icons.history),
+            tooltip: '対局履歴',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const GameRecordsBrowser()),
               );
             },
           ),
