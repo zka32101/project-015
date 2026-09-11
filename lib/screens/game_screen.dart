@@ -17,6 +17,7 @@ import '../engine/replay.dart';
 import '../engine/victory_effects.dart';
 import '../viewmodels/game_view_model.dart';
 import 'achievements_screen.dart';
+import 'difficulty_progression_screen.dart';
 import 'enhanced_achievements_screen.dart';
 import 'game_analytics_dashboard_screen.dart';
 import 'game_records_browser.dart';
@@ -204,6 +205,18 @@ class GameScreen extends ConsumerWidget {
                 MaterialPageRoute(
                     builder: (_) =>
                         const GameAnalyticsDashboardScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('progression_button'),
+            icon: const Icon(Icons.trending_up),
+            tooltip: '難易度進捗',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const DifficultyProgressionScreen()),
               );
             },
           ),
