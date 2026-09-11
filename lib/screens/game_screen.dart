@@ -17,6 +17,7 @@ import '../engine/replay.dart';
 import '../engine/victory_effects.dart';
 import '../viewmodels/game_view_model.dart';
 import 'achievements_screen.dart';
+import 'enhanced_achievements_screen.dart';
 import 'game_records_browser.dart';
 import 'kifu_viewer_screen.dart';
 import 'puzzle_screen.dart';
@@ -168,7 +169,7 @@ class GameScreen extends ConsumerWidget {
             tooltip: '実績',
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+                MaterialPageRoute(builder: (_) => const EnhancedAchievementsScreen()),
               );
             },
           ),
