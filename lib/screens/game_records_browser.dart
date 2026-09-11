@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/game_record.dart';
 import '../engine/models.dart';
 import '../providers/game_records_provider.dart';
+import 'move_analysis_screen.dart';
 
 /// Comprehensive game records browser with filtering, sorting, and detailed views
 class GameRecordsBrowser extends ConsumerStatefulWidget {
@@ -452,14 +453,37 @@ class _GameRecordTile extends StatelessWidget {
                   ),
                   PopupMenuButton<String>(
                     onSelected: (value) {
-                      if (value == 'delete') {
+                      if (value == 'analyze') {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                MoveAnalysisScreen(gameRecord: record),
+                          ),
+                        );
+                      } else if (value == 'delete') {
                         onDelete();
                       }
                     },
                     itemBuilder: (context) => [
                       const PopupMenuItem(
+                        value: 'analyze',
+                        child: Row(
+                          children: [
+                            Icon(Icons.analytics, size: 18),
+                            SizedBox(width: 8),
+                            Text('分析'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
                         value: 'delete',
-                        child: Text('削除'),
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, size: 18),
+                            SizedBox(width: 8),
+                            Text('削除'),
+                          ],
+                        ),
                       ),
                     ],
                   ),
