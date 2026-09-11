@@ -17,6 +17,7 @@ import '../engine/replay.dart';
 import '../engine/victory_effects.dart';
 import '../viewmodels/game_view_model.dart';
 import 'achievements_screen.dart';
+import 'badges_screen.dart';
 import 'daily_login_rewards_screen.dart';
 import 'difficulty_progression_screen.dart';
 import 'enhanced_achievements_screen.dart';
@@ -178,6 +179,16 @@ class GameScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const EnhancedAchievementsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('badges_button'),
+            icon: const Icon(Icons.card_membership),
+            tooltip: 'バッジ',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const BadgesScreen()),
               );
             },
           ),
