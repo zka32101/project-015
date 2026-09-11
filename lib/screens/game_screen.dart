@@ -18,6 +18,7 @@ import '../engine/victory_effects.dart';
 import '../viewmodels/game_view_model.dart';
 import 'achievements_screen.dart';
 import 'enhanced_achievements_screen.dart';
+import 'game_analytics_dashboard_screen.dart';
 import 'game_records_browser.dart';
 import 'player_profile_screen.dart';
 import 'kifu_viewer_screen.dart';
@@ -191,6 +192,18 @@ class GameScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const PlayerProfileScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('analytics_button'),
+            icon: const Icon(Icons.analytics),
+            tooltip: 'ゲーム分析',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const GameAnalyticsDashboardScreen()),
               );
             },
           ),
