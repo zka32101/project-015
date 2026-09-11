@@ -27,6 +27,7 @@ import 'leaderboard_screen.dart';
 import 'notifications_screen.dart';
 import 'player_profile_screen.dart';
 import 'seasonal_progression_screen.dart';
+import 'statistics_archive_screen.dart';
 import 'tournaments_screen.dart';
 import 'kifu_viewer_screen.dart';
 import 'puzzle_screen.dart';
@@ -144,6 +145,16 @@ class GameScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const StatisticsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('statistics_archive_button'),
+            icon: const Icon(Icons.history_edu),
+            tooltip: '統計アーカイブ',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const StatisticsArchiveScreen()),
               );
             },
           ),
