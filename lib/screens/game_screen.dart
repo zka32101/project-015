@@ -18,6 +18,7 @@ import '../engine/victory_effects.dart';
 import '../viewmodels/game_view_model.dart';
 import 'achievements_screen.dart';
 import 'badges_screen.dart';
+import 'daily_bonus_calendar_screen.dart';
 import 'daily_login_rewards_screen.dart';
 import 'difficulty_progression_screen.dart';
 import 'enhanced_achievements_screen.dart';
@@ -213,6 +214,18 @@ class GameScreen extends ConsumerWidget {
                 MaterialPageRoute(
                     builder: (_) =>
                         const DailyLoginRewardsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('daily_bonus_calendar_button'),
+            icon: const Icon(Icons.calendar_month),
+            tooltip: 'ボーナスカレンダー',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const DailyBonusCalendarScreen()),
               );
             },
           ),
