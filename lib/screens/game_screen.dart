@@ -28,6 +28,7 @@ import 'leaderboard_screen.dart';
 import 'notifications_screen.dart';
 import 'player_profile_screen.dart';
 import 'seasonal_progression_screen.dart';
+import 'sound_settings_screen.dart';
 import 'statistics_archive_screen.dart';
 import 'tournaments_screen.dart';
 import 'kifu_viewer_screen.dart';
@@ -318,6 +319,16 @@ class GameScreen extends ConsumerWidget {
                 MaterialPageRoute(
                     builder: (_) =>
                         const TournamentsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('sound_settings_button'),
+            icon: const Icon(Icons.volume_up),
+            tooltip: '音声設定',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SoundSettingsScreen()),
               );
             },
           ),
