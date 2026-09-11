@@ -21,6 +21,7 @@ import 'difficulty_progression_screen.dart';
 import 'enhanced_achievements_screen.dart';
 import 'game_analytics_dashboard_screen.dart';
 import 'game_records_browser.dart';
+import 'leaderboard_screen.dart';
 import 'player_profile_screen.dart';
 import 'kifu_viewer_screen.dart';
 import 'puzzle_screen.dart';
@@ -218,6 +219,18 @@ class GameScreen extends ConsumerWidget {
                 MaterialPageRoute(
                     builder: (_) =>
                         const DifficultyProgressionScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('leaderboard_button'),
+            icon: const Icon(Icons.leaderboard),
+            tooltip: 'ランキング',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const LeaderboardScreen()),
               );
             },
           ),
