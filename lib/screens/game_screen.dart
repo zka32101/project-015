@@ -28,6 +28,7 @@ import 'rank_detail_screen.dart';
 import 'settings_screen.dart';
 import 'statistics_screen.dart';
 import 'tutorial_screen.dart';
+import 'weekly_goals_screen.dart';
 
 const _highlightColor = Color(0x664CAF50);
 
@@ -217,6 +218,18 @@ class GameScreen extends ConsumerWidget {
                 MaterialPageRoute(
                     builder: (_) =>
                         const DifficultyProgressionScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('weekly_goals_button'),
+            icon: const Icon(Icons.assignment_turned_in),
+            tooltip: '週間目標',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const WeeklyGoalsScreen()),
               );
             },
           ),
