@@ -17,6 +17,7 @@ import '../engine/replay.dart';
 import '../engine/victory_effects.dart';
 import '../viewmodels/game_view_model.dart';
 import 'achievements_screen.dart';
+import 'daily_login_rewards_screen.dart';
 import 'difficulty_progression_screen.dart';
 import 'enhanced_achievements_screen.dart';
 import 'game_analytics_dashboard_screen.dart';
@@ -176,6 +177,18 @@ class GameScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const EnhancedAchievementsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('daily_login_button'),
+            icon: const Icon(Icons.calendar_today),
+            tooltip: 'デイリーリワード',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const DailyLoginRewardsScreen()),
               );
             },
           ),
