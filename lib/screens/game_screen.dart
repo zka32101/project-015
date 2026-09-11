@@ -23,6 +23,7 @@ import 'game_analytics_dashboard_screen.dart';
 import 'game_records_browser.dart';
 import 'leaderboard_screen.dart';
 import 'player_profile_screen.dart';
+import 'seasonal_progression_screen.dart';
 import 'kifu_viewer_screen.dart';
 import 'puzzle_screen.dart';
 import 'rank_detail_screen.dart';
@@ -231,6 +232,18 @@ class GameScreen extends ConsumerWidget {
                 MaterialPageRoute(
                     builder: (_) =>
                         const LeaderboardScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('seasonal_button'),
+            icon: const Icon(Icons.calendar_month),
+            tooltip: 'シーズン',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const SeasonalProgressionScreen()),
               );
             },
           ),
