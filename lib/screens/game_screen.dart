@@ -27,6 +27,7 @@ import 'leaderboard_screen.dart';
 import 'notifications_screen.dart';
 import 'player_profile_screen.dart';
 import 'seasonal_progression_screen.dart';
+import 'tournaments_screen.dart';
 import 'kifu_viewer_screen.dart';
 import 'puzzle_screen.dart';
 import 'rank_detail_screen.dart';
@@ -281,6 +282,18 @@ class GameScreen extends ConsumerWidget {
                 MaterialPageRoute(
                     builder: (_) =>
                         const WeeklyGoalsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('tournaments_button'),
+            icon: const Icon(Icons.sports_score),
+            tooltip: '大会',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const TournamentsScreen()),
               );
             },
           ),
