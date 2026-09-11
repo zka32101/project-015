@@ -19,6 +19,7 @@ import '../viewmodels/game_view_model.dart';
 import 'achievements_screen.dart';
 import 'enhanced_achievements_screen.dart';
 import 'game_records_browser.dart';
+import 'player_profile_screen.dart';
 import 'kifu_viewer_screen.dart';
 import 'puzzle_screen.dart';
 import 'rank_detail_screen.dart';
@@ -180,6 +181,16 @@ class GameScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const GameRecordsBrowser()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('profile_button'),
+            icon: const Icon(Icons.person),
+            tooltip: 'プロフィール',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PlayerProfileScreen()),
               );
             },
           ),
