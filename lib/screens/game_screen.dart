@@ -23,6 +23,7 @@ import 'enhanced_achievements_screen.dart';
 import 'game_analytics_dashboard_screen.dart';
 import 'game_records_browser.dart';
 import 'leaderboard_screen.dart';
+import 'notifications_screen.dart';
 import 'player_profile_screen.dart';
 import 'seasonal_progression_screen.dart';
 import 'kifu_viewer_screen.dart';
@@ -287,6 +288,7 @@ class GameScreen extends ConsumerWidget {
       body: SafeArea(
         child: Stack(
           children: [
+            // Main game board and UI
             Column(
               children: [
                 _TurnBanner(game: game, theme: theme, aiDifficulty: viewState.aiDifficulty),
@@ -362,6 +364,8 @@ class GameScreen extends ConsumerWidget {
               ],
             ),
             _VictoryFlash(result: game.result, theme: theme),
+            // Notifications overlay
+            const NotificationsOverlay(),
           ],
         ),
       ),
