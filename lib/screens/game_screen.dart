@@ -25,12 +25,14 @@ import 'daily_login_rewards_screen.dart';
 import 'daily_tips_screen.dart';
 import 'difficulty_progression_screen.dart';
 import 'enhanced_achievements_screen.dart';
+import 'friends_screen.dart';
 import 'game_analytics_dashboard_screen.dart';
 import 'game_modes_screen.dart';
 import 'game_records_browser.dart';
 import 'leaderboard_screen.dart';
 import 'notifications_screen.dart';
 import 'player_profile_screen.dart';
+import 'replay_study_screen.dart';
 import 'seasonal_progression_screen.dart';
 import 'skill_rating_screen.dart';
 import 'sound_settings_screen.dart';
@@ -256,12 +258,32 @@ class GameScreen extends ConsumerWidget {
             },
           ),
           IconButton(
+            key: const Key('replay_study_button'),
+            icon: const Icon(Icons.menu_book),
+            tooltip: 'リプレイ研究モード',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ReplayStudyScreen()),
+              );
+            },
+          ),
+          IconButton(
             key: const Key('profile_button'),
             icon: const Icon(Icons.person),
             tooltip: 'プロフィール',
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const PlayerProfileScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('friends_button'),
+            icon: const Icon(Icons.people),
+            tooltip: 'フレンド',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const FriendsScreen()),
               );
             },
           ),
