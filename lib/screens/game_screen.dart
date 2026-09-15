@@ -22,6 +22,7 @@ import 'badges_screen.dart';
 import 'daily_bonus_calendar_screen.dart';
 import 'daily_challenges_screen.dart';
 import 'daily_login_rewards_screen.dart';
+import 'daily_tips_screen.dart';
 import 'difficulty_progression_screen.dart';
 import 'enhanced_achievements_screen.dart';
 import 'game_analytics_dashboard_screen.dart';
@@ -333,6 +334,18 @@ class GameScreen extends ConsumerWidget {
                 MaterialPageRoute(
                     builder: (_) =>
                         const DailyChallengesScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('daily_tips_button'),
+            icon: const Icon(Icons.lightbulb),
+            tooltip: 'デイリーティップス',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const DailyTipsScreen()),
               );
             },
           ),
