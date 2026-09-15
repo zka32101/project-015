@@ -31,6 +31,7 @@ import 'leaderboard_screen.dart';
 import 'notifications_screen.dart';
 import 'player_profile_screen.dart';
 import 'seasonal_progression_screen.dart';
+import 'skill_rating_screen.dart';
 import 'sound_settings_screen.dart';
 import 'statistics_archive_screen.dart';
 import 'tournaments_screen.dart';
@@ -296,6 +297,18 @@ class GameScreen extends ConsumerWidget {
                 MaterialPageRoute(
                     builder: (_) =>
                         const LeaderboardScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('skill_rating_button'),
+            icon: const Icon(Icons.trending_up),
+            tooltip: 'スキルレーティング',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const SkillRatingScreen()),
               );
             },
           ),
