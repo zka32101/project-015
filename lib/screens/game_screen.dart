@@ -17,6 +17,7 @@ import '../engine/replay.dart';
 import '../engine/victory_effects.dart';
 import '../viewmodels/game_view_model.dart';
 import 'achievements_screen.dart';
+import 'avatars_screen.dart';
 import 'badges_screen.dart';
 import 'daily_bonus_calendar_screen.dart';
 import 'daily_challenges_screen.dart';
@@ -353,6 +354,16 @@ class GameScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const SoundSettingsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('avatars_button'),
+            icon: const Icon(Icons.sentiment_very_satisfied),
+            tooltip: 'アバター＆コスメティック',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AvatarsScreen()),
               );
             },
           ),
