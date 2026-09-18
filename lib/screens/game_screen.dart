@@ -17,12 +17,34 @@ import '../engine/replay.dart';
 import '../engine/victory_effects.dart';
 import '../viewmodels/game_view_model.dart';
 import 'achievements_screen.dart';
+import 'avatars_screen.dart';
+import 'badges_screen.dart';
+import 'daily_bonus_calendar_screen.dart';
+import 'daily_challenges_screen.dart';
+import 'daily_login_rewards_screen.dart';
+import 'daily_tips_screen.dart';
+import 'difficulty_progression_screen.dart';
+import 'enhanced_achievements_screen.dart';
+import 'friends_screen.dart';
+import 'game_analytics_dashboard_screen.dart';
+import 'game_modes_screen.dart';
+import 'game_records_browser.dart';
+import 'leaderboard_screen.dart';
+import 'notifications_screen.dart';
+import 'player_profile_screen.dart';
+import 'replay_study_screen.dart';
+import 'seasonal_progression_screen.dart';
+import 'skill_rating_screen.dart';
+import 'sound_settings_screen.dart';
+import 'statistics_archive_screen.dart';
+import 'tournaments_screen.dart';
 import 'kifu_viewer_screen.dart';
 import 'puzzle_screen.dart';
 import 'rank_detail_screen.dart';
 import 'settings_screen.dart';
 import 'statistics_screen.dart';
 import 'tutorial_screen.dart';
+import 'weekly_goals_screen.dart';
 
 const _highlightColor = Color(0x664CAF50);
 
@@ -75,6 +97,16 @@ class GameScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const PuzzleScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('game_modes_button'),
+            icon: const Icon(Icons.videogame_asset),
+            tooltip: 'ゲームモード',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const GameModesScreen()),
               );
             },
           ),
@@ -136,6 +168,16 @@ class GameScreen extends ConsumerWidget {
             },
           ),
           IconButton(
+            key: const Key('statistics_archive_button'),
+            icon: const Icon(Icons.history_edu),
+            tooltip: '統計アーカイブ',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const StatisticsArchiveScreen()),
+              );
+            },
+          ),
+          IconButton(
             key: const Key('kifu_button'),
             icon: const Icon(Icons.history),
             tooltip: '棋譜',
@@ -167,7 +209,209 @@ class GameScreen extends ConsumerWidget {
             tooltip: '実績',
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+                MaterialPageRoute(builder: (_) => const EnhancedAchievementsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('badges_button'),
+            icon: const Icon(Icons.card_membership),
+            tooltip: 'バッジ',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const BadgesScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('daily_login_button'),
+            icon: const Icon(Icons.calendar_today),
+            tooltip: 'デイリーリワード',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const DailyLoginRewardsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('daily_bonus_calendar_button'),
+            icon: const Icon(Icons.calendar_month),
+            tooltip: 'ボーナスカレンダー',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const DailyBonusCalendarScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('game_records_button'),
+            icon: const Icon(Icons.history),
+            tooltip: '対局履歴',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const GameRecordsBrowser()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('replay_study_button'),
+            icon: const Icon(Icons.menu_book),
+            tooltip: 'リプレイ研究モード',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ReplayStudyScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('profile_button'),
+            icon: const Icon(Icons.person),
+            tooltip: 'プロフィール',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PlayerProfileScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('friends_button'),
+            icon: const Icon(Icons.people),
+            tooltip: 'フレンド',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const FriendsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('analytics_button'),
+            icon: const Icon(Icons.analytics),
+            tooltip: 'ゲーム分析',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const GameAnalyticsDashboardScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('progression_button'),
+            icon: const Icon(Icons.trending_up),
+            tooltip: '難易度進捗',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const DifficultyProgressionScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('leaderboard_button'),
+            icon: const Icon(Icons.leaderboard),
+            tooltip: 'ランキング',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const LeaderboardScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('skill_rating_button'),
+            icon: const Icon(Icons.trending_up),
+            tooltip: 'スキルレーティング',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const SkillRatingScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('seasonal_button'),
+            icon: const Icon(Icons.calendar_month),
+            tooltip: 'シーズン',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const SeasonalProgressionScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('daily_challenges_button'),
+            icon: const Icon(Icons.local_fire_department),
+            tooltip: 'デイリーチャレンジ',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const DailyChallengesScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('daily_tips_button'),
+            icon: const Icon(Icons.lightbulb),
+            tooltip: 'デイリーティップス',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const DailyTipsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('weekly_goals_button'),
+            icon: const Icon(Icons.assignment_turned_in),
+            tooltip: '週間目標',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const WeeklyGoalsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('tournaments_button'),
+            icon: const Icon(Icons.sports_score),
+            tooltip: '大会',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const TournamentsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('sound_settings_button'),
+            icon: const Icon(Icons.volume_up),
+            tooltip: '音声設定',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SoundSettingsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('avatars_button'),
+            icon: const Icon(Icons.sentiment_very_satisfied),
+            tooltip: 'アバター＆コスメティック',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AvatarsScreen()),
               );
             },
           ),
@@ -186,6 +430,7 @@ class GameScreen extends ConsumerWidget {
       body: SafeArea(
         child: Stack(
           children: [
+            // Main game board and UI
             Column(
               children: [
                 _TurnBanner(game: game, theme: theme, aiDifficulty: viewState.aiDifficulty),
@@ -261,6 +506,8 @@ class GameScreen extends ConsumerWidget {
               ],
             ),
             _VictoryFlash(result: game.result, theme: theme),
+            // Notifications overlay
+            const NotificationsOverlay(),
           ],
         ),
       ),
