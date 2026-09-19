@@ -29,6 +29,7 @@ import 'friends_screen.dart';
 import 'game_analytics_dashboard_screen.dart';
 import 'multiplayer_lobby_screen.dart';
 import 'player_search_screen.dart';
+import 'replay_sharing_screen.dart';
 import 'game_modes_screen.dart';
 import 'game_records_browser.dart';
 import 'leaderboard_screen.dart';
@@ -266,6 +267,16 @@ class GameScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ReplayStudyScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('replay_sharing_button'),
+            icon: const Icon(Icons.share),
+            tooltip: 'リプレイ共有',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ReplaySharingScreen()),
               );
             },
           ),
