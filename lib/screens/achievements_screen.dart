@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../engine/achievements.dart';
-import '../engine/board_theme.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});

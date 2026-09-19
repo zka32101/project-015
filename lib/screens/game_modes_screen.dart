@@ -8,62 +8,50 @@ class GameModesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final gameModesAsync = ref.watch(gameModesProvider);
+    final modesState = ref.watch(gameModesProvider);
     final theme = Theme.of(context);
 
-    return gameModesAsync.when(
-      data: (modesState) {
-        return Scaffold(
-          backgroundColor: theme.scaffoldBackgroundColor,
-          appBar: AppBar(
-            title: const Text('ゲームモード'),
-            elevation: 0,
-          ),
-          body: CustomScrollView(
-            slivers: [
-              // Modes played header
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: _ModesPlayedHeader(
-                    totalPlayed: modesState.totalModesPlayed,
-                  ),
-                ),
-              ),
-              const SliverPadding(padding: EdgeInsets.only(top: 8)),
-
-              // Game modes grid
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverGrid(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final mode = modesState.availableModes[index];
-                      return _GameModeCard(mode: mode);
-                    },
-                    childCount: modesState.availableModes.length,
-                  ),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 0.9,
-                  ),
-                ),
-              ),
-              const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
-            ],
-          ),
-        );
-      },
-      loading: () => Scaffold(
-        appBar: AppBar(title: const Text('ゲームモード')),
-        body: const Center(child: CircularProgressIndicator()),
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text('ゲームモード'),
+        elevation: 0,
       ),
-      error: (error, stack) => Scaffold(
-        appBar: AppBar(title: const Text('ゲームモード')),
-        body: Center(child: Text('エラー: $error')),
+      body: CustomScrollView(
+        slivers: [
+          // Modes played header
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: _ModesPlayedHeader(
+                totalPlayed: modesState.totalModesPlayed,
+              ),
+            ),
+          ),
+          const SliverPadding(padding: EdgeInsets.only(top: 8)),
+
+          // Game modes grid
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverGrid(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final mode = modesState.availableModes[index];
+                  return _GameModeCard(mode: mode);
+                },
+                childCount: modesState.availableModes.length,
+              ),
+              gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.9,
+              ),
+            ),
+          ),
+          const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+        ],
       ),
     );
   }

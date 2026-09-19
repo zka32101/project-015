@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'ai_evaluator.dart';
@@ -59,9 +58,7 @@ class ReversiaAi {
       case AiDifficulty.easy:
         final move = _pickEasy(board, owner, moves);
         final thinkingTime = DateTime.now().difference(startTime);
-        final score = move != null
-            ? AiStrategy.evaluateMoveEasy(board, move, owner)
-            : null;
+        final score = AiStrategy.evaluateMoveEasy(board, move, owner);
         return AiMoveResult(
           move: move,
           evaluationScore: score,
@@ -72,9 +69,7 @@ class ReversiaAi {
       case AiDifficulty.medium:
         final move = _pickGreedy(board, owner, moves);
         final thinkingTime = DateTime.now().difference(startTime);
-        final score = move != null
-            ? AiStrategy.evaluateMoveMedium(board, move, owner)
-            : null;
+        final score = AiStrategy.evaluateMoveMedium(board, move, owner);
         return AiMoveResult(
           move: move,
           evaluationScore: score,

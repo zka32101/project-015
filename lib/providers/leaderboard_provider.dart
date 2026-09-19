@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'game_analytics_provider.dart';
-import 'player_profile_provider.dart';
+import 'player_profile_provider.dart' hide gameAnalyticsProvider;
 
 /// Player leaderboard entry
 class LeaderboardEntry {
@@ -178,7 +178,7 @@ class LeaderboardNotifier extends StateNotifier<LeaderboardState> {
       for (int i = 0; i < entries.length; i++) {
         if (entries[i].rating <= playerRating) {
           playerRank = i + 1;
-          playerEntry = playerEntry.copyWith(rank: playerRank);
+          playerEntry = playerEntry!.copyWith(rank: playerRank);
           break;
         }
       }
@@ -186,7 +186,7 @@ class LeaderboardNotifier extends StateNotifier<LeaderboardState> {
       // If player is at bottom, assign last rank
       if (playerRank == null) {
         playerRank = entries.length + 1;
-        playerEntry = playerEntry.copyWith(rank: playerRank);
+        playerEntry = playerEntry!.copyWith(rank: playerRank);
       }
     }
 
@@ -212,7 +212,7 @@ class LeaderboardNotifier extends StateNotifier<LeaderboardState> {
 
     for (int i = 0; i < 100; i++) {
       final variance = (i * 0.5);
-      final rating = ((3000 - (i * 25)) - variance).clamp(100, 3000);
+      final rating = ((3000 - (i * 25)) - variance).clamp(100, 3000).toDouble();
       final winRate = (baseWinRate - (i * 0.003)).clamp(0.2, 0.9);
       final games = (baseGames + (100 - i) * 10).toInt();
       final wins = (games * winRate).toInt();
@@ -316,7 +316,7 @@ extension _LeaderboardEntryCopyWith on LeaderboardEntry {
 final leaderboardProvider =
     StateNotifierProvider<LeaderboardNotifier, LeaderboardState>((ref) {
   final analytics = ref.watch(gameAnalyticsProvider);
-  final playerProfile = ref.watch(playerProfileProvider);
+  final playerProfile = ref.watch(playerProfileProvider).profile;
 
   return LeaderboardNotifier(analytics, playerProfile);
 });

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../engine/models.dart';
 import 'game_analytics_provider.dart';
 import 'leaderboard_provider.dart';
 import 'seasonal_progression_provider.dart';
@@ -109,108 +110,113 @@ class BadgesState {
 
 /// Notifier for badges
 class BadgesNotifier extends StateNotifier<BadgesState> {
-  final SharedPreferences prefs;
+  SharedPreferences? _prefs;
   final Ref ref;
 
-  BadgesNotifier(this.prefs, this.ref)
-      : super(_buildInitialState(prefs)) {
+  BadgesNotifier(this.ref) : super(_buildInitialState()) {
     _initializeBadges();
   }
 
   /// Initialize badges
-  void _initializeBadges() {
-    _updateBadgeStates();
-  }
+  Future<void> _initializeBadges() async {
+    final prefs = await SharedPreferences.getInstance();
+    _prefs = prefs;
 
-  /// Build initial state
-  static BadgesState _buildInitialState(SharedPreferences prefs) {
-    final allBadges = _generateAllBadges();
+    final allBadges = state.allBadges;
     final unlockedIds = prefs.getStringList('unlocked_badges') ?? [];
     final selectedTitle = prefs.getString('selected_title');
-
     final unlockedBadges = allBadges
         .where((badge) => unlockedIds.contains(badge.id))
         .toList();
 
-    return BadgesState(
-      allBadges: allBadges,
+    state = state.copyWith(
       unlockedBadges: unlockedBadges,
       selectedTitle: selectedTitle,
       totalPoints: unlockedBadges.length * 10,
     );
+
+    await _updateBadgeStates();
+  }
+
+  /// Build initial state
+  static BadgesState _buildInitialState() {
+    final allBadges = _generateAllBadges();
+
+    return BadgesState(
+      allBadges: allBadges,
+      unlockedBadges: [],
+    );
   }
 
   /// Update badge unlock states based on game progress
-  void _updateBadgeStates() async {
+  Future<void> _updateBadgeStates() async {
     try {
-      final analyticsState = ref.watch(gameAnalyticsProvider);
-      final leaderboardState = ref.watch(leaderboardProvider);
-      final seasonalState = ref.watch(seasonalProgressionProvider);
+      final analytics = ref.watch(gameAnalyticsProvider);
+      final leaderboard = ref.watch(leaderboardProvider);
+      final seasonal = ref.watch(seasonalProgressionProvider);
 
-      await analyticsState.whenData((analytics) async {
-        await leaderboardState.whenData((leaderboard) async {
-          await seasonalState.whenData((seasonal) async {
-            final updatedBadges = <String>[];
-            final existingUnlocked =
-                state.unlockedBadges.map((b) => b.id).toSet();
+      final updatedBadges = <String>[];
+      final existingUnlocked =
+          state.unlockedBadges.map((b) => b.id).toSet();
+      final totalWins = analytics.allRecords
+          .where((r) => r.result == GameResult.playerAWins)
+          .length;
 
-            // Check all badge conditions
-            if (analytics.totalWins >= 10) updatedBadges.add('first_wins_10');
-            if (analytics.totalWins >= 50) updatedBadges.add('veteran_50');
-            if (analytics.totalWins >= 100) updatedBadges.add('master_100');
-            if (analytics.totalWins >= 500) updatedBadges.add('legend_500');
+      // Check all badge conditions
+      if (totalWins >= 10) updatedBadges.add('first_wins_10');
+      if (totalWins >= 50) updatedBadges.add('veteran_50');
+      if (totalWins >= 100) updatedBadges.add('master_100');
+      if (totalWins >= 500) updatedBadges.add('legend_500');
 
-            if (analytics.averageWinRate >= 0.7)
-              updatedBadges.add('dominant_70');
-            if (analytics.averageWinRate >= 0.8)
-              updatedBadges.add('elite_80');
-            if (analytics.averageWinRate >= 0.9)
-              updatedBadges.add('unstoppable_90');
+      if (analytics.overallWinRate >= 0.7)
+        updatedBadges.add('dominant_70');
+      if (analytics.overallWinRate >= 0.8)
+        updatedBadges.add('elite_80');
+      if (analytics.overallWinRate >= 0.9)
+        updatedBadges.add('unstoppable_90');
 
-            if (analytics.totalGames >= 500)
-              updatedBadges.add('grinder_500');
-            if (analytics.totalGames >= 1000)
-              updatedBadges.add('addict_1000');
+      if (analytics.totalGamesAnalyzed >= 500)
+        updatedBadges.add('grinder_500');
+      if (analytics.totalGamesAnalyzed >= 1000)
+        updatedBadges.add('addict_1000');
 
-            if (leaderboard.playerRank <= 10)
-              updatedBadges.add('top_10_rank');
-            if (leaderboard.playerRank <= 5)
-              updatedBadges.add('top_5_rank');
-            if (leaderboard.playerRank == 1)
-              updatedBadges.add('champion_rank');
+      if ((leaderboard.playerRank ?? 999999) <= 10)
+        updatedBadges.add('top_10_rank');
+      if ((leaderboard.playerRank ?? 999999) <= 5)
+        updatedBadges.add('top_5_rank');
+      if (leaderboard.playerRank == 1)
+        updatedBadges.add('champion_rank');
 
-            if (seasonal.currentPlayerData.tier == SeasonalTier.master)
-              updatedBadges.add('master_tier');
+      if (seasonal.playerSeasonalData.currentTier == SeasonalTier.master)
+        updatedBadges.add('master_tier');
 
-            // Check for newly unlocked badges
-            final newlyUnlocked = updatedBadges.where(
-              (id) => !existingUnlocked.contains(id),
-            );
+      // Check for newly unlocked badges
+      final newlyUnlocked = updatedBadges.where(
+        (id) => !existingUnlocked.contains(id),
+      );
 
-            // Save updated list
-            if (newlyUnlocked.isNotEmpty) {
-              final allIds = {...existingUnlocked, ...newlyUnlocked};
-              await prefs.setStringList('unlocked_badges', allIds.toList());
-            }
+      // Save updated list
+      if (newlyUnlocked.isNotEmpty) {
+        final allIds = {...existingUnlocked, ...newlyUnlocked};
+        final prefs = _prefs ??= await SharedPreferences.getInstance();
+        await prefs.setStringList('unlocked_badges', allIds.toList());
+      }
 
-            // Update state with new badge information
-            final allBadges = _generateAllBadges();
-            final unlockedBadgesList = allBadges
-                .where((badge) => updatedBadges.contains(badge.id))
-                .map((badge) => badge.copyWith(
-                      isLocked: false,
-                      unlockedDate: DateTime.now(),
-                    ))
-                .toList();
+      // Update state with new badge information
+      final allBadges = _generateAllBadges();
+      final unlockedBadgesList = allBadges
+          .where((badge) => updatedBadges.contains(badge.id))
+          .map((badge) => badge.copyWith(
+                isLocked: false,
+                unlockedDate: DateTime.now(),
+              ))
+          .toList();
 
-            state = state.copyWith(
-              allBadges: allBadges,
-              unlockedBadges: unlockedBadgesList,
-              totalPoints: unlockedBadgesList.length * 10,
-            );
-          });
-        });
-      });
+      state = state.copyWith(
+        allBadges: allBadges,
+        unlockedBadges: unlockedBadgesList,
+        totalPoints: unlockedBadgesList.length * 10,
+      );
     } catch (e) {
       state = state.copyWith(error: 'Failed to update badges: $e');
     }
@@ -223,6 +229,7 @@ class BadgesNotifier extends StateNotifier<BadgesState> {
       return;
     }
 
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
     await prefs.setString('selected_title', badgeId);
     state = state.copyWith(selectedTitle: badgeId);
   }
@@ -349,10 +356,7 @@ class BadgesNotifier extends StateNotifier<BadgesState> {
 
 /// Riverpod provider for badges
 final badgesProvider = StateNotifierProvider<BadgesNotifier, BadgesState>(
-  (ref) async {
-    final prefs = await SharedPreferences.getInstance();
-    return BadgesNotifier(prefs, ref);
-  },
+  (ref) => BadgesNotifier(ref),
 );
 
 /// Alternative sync provider (for testing)

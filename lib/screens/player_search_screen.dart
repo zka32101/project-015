@@ -251,11 +251,10 @@ class _PlayerSearchResultCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isFriend = ref.watch(friends_provider.friendsProvider).maybeWhen(
-      data: (friendsState) =>
-          friendsState.friends.any((f) => f.id == player.id),
-      orElse: () => false,
-    );
+    final isFriend = ref
+        .watch(friends_provider.friendsProvider)
+        .friends
+        .any((f) => f.id == player.id);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

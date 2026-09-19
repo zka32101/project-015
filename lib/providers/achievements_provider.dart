@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/achievements.dart';
 import '../engine/game_analytics.dart';
@@ -161,16 +160,16 @@ class AchievementsNotifier extends StateNotifier<AchievementsState> {
 
     switch (id) {
       case 'first_win':
-        final progress = _analytics!.baseStats.playerAWins > 0 ? 1.0 : 0.0;
+        final progress = _analytics.baseStats.playerAWins > 0 ? 1.0 : 0.0;
         return (
           AchievementRarity.common,
           progress,
-          _analytics!.baseStats.playerAWins,
+          _analytics.baseStats.playerAWins,
           1,
         );
 
       case 'ten_wins':
-        final current = _analytics!.baseStats.playerAWins;
+        final current = _analytics.baseStats.playerAWins;
         return (
           AchievementRarity.uncommon,
           (current / 10).clamp(0, 1),
@@ -179,7 +178,7 @@ class AchievementsNotifier extends StateNotifier<AchievementsState> {
         );
 
       case 'fifty_wins':
-        final current = _analytics!.baseStats.playerAWins;
+        final current = _analytics.baseStats.playerAWins;
         return (
           AchievementRarity.rare,
           (current / 50).clamp(0, 1),
@@ -188,7 +187,7 @@ class AchievementsNotifier extends StateNotifier<AchievementsState> {
         );
 
       case 'hundred_wins':
-        final current = _analytics!.baseStats.playerAWins;
+        final current = _analytics.baseStats.playerAWins;
         return (
           AchievementRarity.epic,
           (current / 100).clamp(0, 1),
@@ -202,7 +201,7 @@ class AchievementsNotifier extends StateNotifier<AchievementsState> {
         return (AchievementRarity.uncommon, 0, 0, 1);
 
       case 'win_streak_5':
-        final current = _analytics!.baseStats.playerAWinStreak;
+        final current = _analytics.baseStats.playerAWinStreak;
         return (
           AchievementRarity.uncommon,
           (current / 5).clamp(0, 1),
@@ -211,7 +210,7 @@ class AchievementsNotifier extends StateNotifier<AchievementsState> {
         );
 
       case 'win_streak_10':
-        final current = _analytics!.baseStats.playerAWinStreak;
+        final current = _analytics.baseStats.playerAWinStreak;
         return (
           AchievementRarity.rare,
           (current / 10).clamp(0, 1),

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/game_record.dart';
+import '../engine/models.dart';
 
 /// Sort order for game records
 enum GameRecordSort {
@@ -79,6 +80,25 @@ class GameRecordsState {
       (sum, record) => sum + record.durationSeconds,
     );
     return total / filteredRecords.length;
+  }
+
+  /// Create a copy of this state with selective updates
+  GameRecordsState copyWith({
+    List<GameRecord>? allRecords,
+    List<GameRecord>? filteredRecords,
+    GameRecordFilter? filter,
+    GameRecordSort? sort,
+    bool? isLoading,
+    String? error,
+  }) {
+    return GameRecordsState(
+      allRecords: allRecords ?? this.allRecords,
+      filteredRecords: filteredRecords ?? this.filteredRecords,
+      filter: filter ?? this.filter,
+      sort: sort ?? this.sort,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+    );
   }
 }
 
@@ -263,25 +283,6 @@ class GameRecordsNotifier extends StateNotifier<GameRecordsState> {
       filteredRecords: filtered,
       filter: filter,
       sort: sort,
-    );
-  }
-
-  /// Helper method to copy state
-  GameRecordsState copyWith({
-    List<GameRecord>? allRecords,
-    List<GameRecord>? filteredRecords,
-    GameRecordFilter? filter,
-    GameRecordSort? sort,
-    bool? isLoading,
-    String? error,
-  }) {
-    return GameRecordsState(
-      allRecords: allRecords ?? state.allRecords,
-      filteredRecords: filteredRecords ?? state.filteredRecords,
-      filter: filter ?? state.filter,
-      sort: sort ?? state.sort,
-      isLoading: isLoading ?? state.isLoading,
-      error: error,
     );
   }
 }

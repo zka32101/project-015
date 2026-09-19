@@ -6,17 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/ai.dart';
 import '../engine/ai_thinking_info.dart';
-import '../engine/animation_effects.dart';
 import '../engine/board_theme.dart';
 import '../engine/enhanced_board_themes.dart';
 import '../engine/game_state.dart';
 import '../engine/models.dart';
 import '../engine/particle_effects.dart';
 import '../engine/rank.dart';
-import '../engine/replay.dart';
 import '../engine/victory_effects.dart';
 import '../viewmodels/game_view_model.dart';
-import 'achievements_screen.dart';
 import 'avatars_screen.dart';
 import 'badges_screen.dart';
 import 'daily_bonus_calendar_screen.dart';
@@ -97,35 +94,6 @@ class GameScreen extends ConsumerWidget {
         backgroundColor: theme.woodDark,
         actions: [
           IconButton(
-            key: const Key('daily_puzzle_button'),
-            icon: const Icon(Icons.calendar_today),
-            tooltip: '今日の1局',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PuzzleScreen()),
-              );
-            },
-          ),
-          IconButton(
-            key: const Key('game_modes_button'),
-            icon: const Icon(Icons.videogame_asset),
-            tooltip: 'ゲームモード',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const GameModesScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            tooltip: '遊び方',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const TutorialScreen()),
-              );
-            },
-          ),
-          IconButton(
             key: const Key('threat_preview_toggle'),
             icon: Icon(
               viewState.showThreatPreview
@@ -164,26 +132,6 @@ class GameScreen extends ConsumerWidget {
             ],
           ),
           IconButton(
-            key: const Key('statistics_button'),
-            icon: const Icon(Icons.bar_chart),
-            tooltip: '成績',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const StatisticsScreen()),
-              );
-            },
-          ),
-          IconButton(
-            key: const Key('statistics_archive_button'),
-            icon: const Icon(Icons.history_edu),
-            tooltip: '統計アーカイブ',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const StatisticsArchiveScreen()),
-              );
-            },
-          ),
-          IconButton(
             key: const Key('kifu_button'),
             icon: const Icon(Icons.history),
             tooltip: '棋譜',
@@ -204,294 +152,481 @@ class GameScreen extends ConsumerWidget {
               }
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: viewModel.restart,
-            tooltip: 'はじめから',
-          ),
-          IconButton(
-            key: const Key('achievements_button'),
-            icon: const Icon(Icons.emoji_events),
-            tooltip: '実績',
-            onPressed: () {
+          PopupMenuButton<VoidCallback>(
+            key: const Key('more_actions_menu'),
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'その他',
+            onSelected: (action) => action(),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PuzzleScreen()),
+              );
+            },
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_today),
+                    const SizedBox(width: 12),
+                    Text('今日の1局'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const GameModesScreen()),
+              );
+            },
+                child: Row(
+                  children: [
+                    Icon(Icons.videogame_asset),
+                    const SizedBox(width: 12),
+                    Text('ゲームモード'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const TutorialScreen()),
+              );
+            },
+                child: Row(
+                  children: [
+                    Icon(Icons.help_outline),
+                    const SizedBox(width: 12),
+                    Text('遊び方'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const StatisticsScreen()),
+              );
+            },
+                child: Row(
+                  children: [
+                    Icon(Icons.bar_chart),
+                    const SizedBox(width: 12),
+                    Text('成績'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const StatisticsArchiveScreen()),
+              );
+            },
+                child: Row(
+                  children: [
+                    Icon(Icons.history_edu),
+                    const SizedBox(width: 12),
+                    Text('統計アーカイブ'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: viewModel.restart,
+                child: Row(
+                  children: [
+                    Icon(Icons.refresh),
+                    const SizedBox(width: 12),
+                    Text('はじめから'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const EnhancedAchievementsScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('badges_button'),
-            icon: const Icon(Icons.card_membership),
-            tooltip: 'バッジ',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.emoji_events),
+                    const SizedBox(width: 12),
+                    Text('実績'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const BadgesScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('daily_login_button'),
-            icon: const Icon(Icons.calendar_today),
-            tooltip: 'デイリーリワード',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.card_membership),
+                    const SizedBox(width: 12),
+                    Text('バッジ'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                     builder: (_) =>
                         const DailyLoginRewardsScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('daily_bonus_calendar_button'),
-            icon: const Icon(Icons.calendar_month),
-            tooltip: 'ボーナスカレンダー',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_today),
+                    const SizedBox(width: 12),
+                    Text('デイリーリワード'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                     builder: (_) =>
                         const DailyBonusCalendarScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('game_records_button'),
-            icon: const Icon(Icons.history),
-            tooltip: '対局履歴',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_month),
+                    const SizedBox(width: 12),
+                    Text('ボーナスカレンダー'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const GameRecordsBrowser()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('replay_study_button'),
-            icon: const Icon(Icons.menu_book),
-            tooltip: 'リプレイ研究モード',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.history),
+                    const SizedBox(width: 12),
+                    Text('対局履歴'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ReplayStudyScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('replay_sharing_button'),
-            icon: const Icon(Icons.share),
-            tooltip: 'リプレイ共有',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.menu_book),
+                    const SizedBox(width: 12),
+                    Text('リプレイ研究モード'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ReplaySharingScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('profile_button'),
-            icon: const Icon(Icons.person),
-            tooltip: 'プロフィール',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.share),
+                    const SizedBox(width: 12),
+                    Text('リプレイ共有'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const PlayerProfileScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('friends_button'),
-            icon: const Icon(Icons.people),
-            tooltip: 'フレンド',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.person),
+                    const SizedBox(width: 12),
+                    Text('プロフィール'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const FriendsScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('player_search_button'),
-            icon: const Icon(Icons.person_search),
-            tooltip: 'プレイヤー検索',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.people),
+                    const SizedBox(width: 12),
+                    Text('フレンド'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const PlayerSearchScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('multiplayer_button'),
-            icon: const Icon(Icons.wifi),
-            tooltip: 'マルチプレイ',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.person_search),
+                    const SizedBox(width: 12),
+                    Text('プレイヤー検索'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const MultiplayerLobbyScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('analytics_button'),
-            icon: const Icon(Icons.analytics),
-            tooltip: 'ゲーム分析',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.wifi),
+                    const SizedBox(width: 12),
+                    Text('マルチプレイ'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                     builder: (_) =>
                         const GameAnalyticsDashboardScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('progression_button'),
-            icon: const Icon(Icons.trending_up),
-            tooltip: '難易度進捗',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.analytics),
+                    const SizedBox(width: 12),
+                    Text('ゲーム分析'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                     builder: (_) =>
                         const DifficultyProgressionScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('leaderboard_button'),
-            icon: const Icon(Icons.leaderboard),
-            tooltip: 'ランキング',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.trending_up),
+                    const SizedBox(width: 12),
+                    Text('難易度進捗'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                     builder: (_) =>
                         const LeaderboardScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('skill_rating_button'),
-            icon: const Icon(Icons.trending_up),
-            tooltip: 'スキルレーティング',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.leaderboard),
+                    const SizedBox(width: 12),
+                    Text('ランキング'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                     builder: (_) =>
                         const SkillRatingScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('seasonal_button'),
-            icon: const Icon(Icons.calendar_month),
-            tooltip: 'シーズン',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.trending_up),
+                    const SizedBox(width: 12),
+                    Text('スキルレーティング'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                     builder: (_) =>
                         const SeasonalProgressionScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('daily_challenges_button'),
-            icon: const Icon(Icons.local_fire_department),
-            tooltip: 'デイリーチャレンジ',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_month),
+                    const SizedBox(width: 12),
+                    Text('シーズン'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                     builder: (_) =>
                         const DailyChallengesScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('event_system_button'),
-            icon: const Icon(Icons.event),
-            tooltip: 'イベント',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.local_fire_department),
+                    const SizedBox(width: 12),
+                    Text('デイリーチャレンジ'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                     builder: (_) =>
                         const EventSystemScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('daily_tips_button'),
-            icon: const Icon(Icons.lightbulb),
-            tooltip: 'デイリーティップス',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.event),
+                    const SizedBox(width: 12),
+                    Text('イベント'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                     builder: (_) =>
                         const DailyTipsScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('weekly_goals_button'),
-            icon: const Icon(Icons.assignment_turned_in),
-            tooltip: '週間目標',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.lightbulb),
+                    const SizedBox(width: 12),
+                    Text('デイリーティップス'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                     builder: (_) =>
                         const WeeklyGoalsScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('tournaments_button'),
-            icon: const Icon(Icons.sports_score),
-            tooltip: '大会',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.assignment_turned_in),
+                    const SizedBox(width: 12),
+                    Text('週間目標'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                     builder: (_) =>
                         const TournamentsScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('sound_settings_button'),
-            icon: const Icon(Icons.volume_up),
-            tooltip: '音声設定',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.sports_score),
+                    const SizedBox(width: 12),
+                    Text('大会'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const SoundSettingsScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('avatars_button'),
-            icon: const Icon(Icons.sentiment_very_satisfied),
-            tooltip: 'アバター＆コスメティック',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.volume_up),
+                    const SizedBox(width: 12),
+                    Text('音声設定'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const AvatarsScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('customization_button'),
-            icon: const Icon(Icons.palette),
-            tooltip: 'カスタマイズ',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.sentiment_very_satisfied),
+                    const SizedBox(width: 12),
+                    Text('アバター＆コスメティック'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const CustomizationScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('settings_button'),
-            icon: const Icon(Icons.settings),
-            tooltip: '設定',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.palette),
+                    const SizedBox(width: 12),
+                    Text('カスタマイズ'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
               );
             },
-          ),
-          IconButton(
-            key: const Key('performance_button'),
-            icon: const Icon(Icons.speed),
-            tooltip: 'パフォーマンス',
-            onPressed: () {
+                child: Row(
+                  children: [
+                    Icon(Icons.settings),
+                    const SizedBox(width: 12),
+                    Text('設定'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const PerformanceOptimizationScreen()),
               );
             },
+                child: Row(
+                  children: [
+                    Icon(Icons.speed),
+                    const SizedBox(width: 12),
+                    Text('パフォーマンス'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

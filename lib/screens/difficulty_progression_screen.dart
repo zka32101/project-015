@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/ai.dart';
 import '../providers/difficulty_progression_provider.dart';
 
 class DifficultyProgressionScreen extends ConsumerWidget {

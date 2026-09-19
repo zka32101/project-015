@@ -133,20 +133,22 @@ class StatisticsArchiveState {
 
 /// Notifier for statistics archive
 class StatisticsArchiveNotifier extends StateNotifier<StatisticsArchiveState> {
-  final SharedPreferences prefs;
+  SharedPreferences? _prefs;
 
-  StatisticsArchiveNotifier(this.prefs)
-      : super(_buildInitialState(prefs)) {
+  StatisticsArchiveNotifier()
+      : super(_buildInitialState()) {
     _initializeArchive();
   }
 
   /// Initialize archive
-  void _initializeArchive() {
+  Future<void> _initializeArchive() async {
+    final prefs = await SharedPreferences.getInstance();
+    _prefs = prefs;
     _generateHistoricalData();
   }
 
   /// Build initial state
-  static StatisticsArchiveState _buildInitialState(SharedPreferences prefs) {
+  static StatisticsArchiveState _buildInitialState() {
     return StatisticsArchiveState(
       dailySnapshots: [],
       weeklySnapshots: [],
@@ -362,6 +364,7 @@ class StatisticsArchiveNotifier extends StateNotifier<StatisticsArchiveState> {
 
   /// Record daily snapshot (called periodically)
   Future<void> recordDailySnapshot(StatsSnapshot snapshot) async {
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
     final archive = prefs.getStringList('daily_snapshots') ?? [];
     // Keep last 90 days
     if (archive.length >= 90) {
@@ -380,10 +383,7 @@ class StatisticsArchiveNotifier extends StateNotifier<StatisticsArchiveState> {
 /// Riverpod provider for statistics archive
 final statisticsArchiveProvider =
     StateNotifierProvider<StatisticsArchiveNotifier, StatisticsArchiveState>(
-  (ref) async {
-    final prefs = await SharedPreferences.getInstance();
-    return StatisticsArchiveNotifier(prefs);
-  },
+  (ref) => StatisticsArchiveNotifier(),
 );
 
 /// Alternative sync provider (for testing)

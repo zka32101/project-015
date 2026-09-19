@@ -11,7 +11,9 @@ class ReplayStudyScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final games = ref.watch(studyableGamesProvider);
-    final studyAsync = ref.watch(replayStudyProvider);
+    final studyState = ref.watch(replayStudyProvider);
+    final sorted = [...games]
+      ..sort((a, b) => b.playedAt.compareTo(a.playedAt));
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -19,12 +21,7 @@ class ReplayStudyScreen extends ConsumerWidget {
         title: const Text('リプレイ研究モード'),
         elevation: 0,
       ),
-      body: studyAsync.when(
-        data: (studyState) {
-          final sorted = [...games]
-            ..sort((a, b) => b.playedAt.compareTo(a.playedAt));
-
-          return CustomScrollView(
+      body: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
@@ -81,11 +78,7 @@ class ReplayStudyScreen extends ConsumerWidget {
                 ),
               const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
             ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('エラー: $error')),
-      ),
+          ),
     );
   }
 }
@@ -346,13 +339,10 @@ class _StudyDetailScreenState extends ConsumerState<StudyDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final studyAsync = ref.watch(replayStudyProvider);
+    final studyState = ref.watch(replayStudyProvider);
+    final studied = studyState.getOrCreate(widget.record.id);
 
-    return studyAsync.when(
-      data: (studyState) {
-        final studied = studyState.getOrCreate(widget.record.id);
-
-        return Scaffold(
+    return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
           appBar: AppBar(
             title: Text('研究: ${widget.record.resultDisplay}'),
@@ -437,14 +427,6 @@ class _StudyDetailScreenState extends ConsumerState<StudyDetailScreen> {
               ),
             ],
           ),
-        );
-      },
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, stack) => Scaffold(
-        body: Center(child: Text('エラー: $error')),
-      ),
     );
   }
 

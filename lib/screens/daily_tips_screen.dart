@@ -8,12 +8,10 @@ class DailyTipsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tipsAsync = ref.watch(dailyTipsProvider);
+    final tipsState = ref.watch(dailyTipsProvider);
     final theme = Theme.of(context);
 
-    return tipsAsync.when(
-      data: (tipsState) {
-        return Scaffold(
+    return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
           appBar: AppBar(
             title: const Text('デイリーティップス'),
@@ -71,16 +69,6 @@ class DailyTipsScreen extends ConsumerWidget {
               const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
             ],
           ),
-        );
-      },
-      loading: () => Scaffold(
-        appBar: AppBar(title: const Text('デイリーティップス')),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, stack) => Scaffold(
-        appBar: AppBar(title: const Text('デイリーティップス')),
-        body: Center(child: Text('エラー: $error')),
-      ),
     );
   }
 }
@@ -258,8 +246,6 @@ class _TipsTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -354,7 +340,8 @@ class _CategoryTabs extends StatefulWidget {
   State<_CategoryTabs> createState() => _CategoryTabsState();
 }
 
-class _CategoryTabsState extends State<_CategoryTabs> {
+class _CategoryTabsState extends State<_CategoryTabs>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override

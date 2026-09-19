@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../engine/game_undo_redo.dart';
 import '../viewmodels/game_view_model.dart';
 
 /// Undo/Redo control buttons for game state management
@@ -15,7 +14,7 @@ class UndoRedoControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final gameState = ref.watch(gameViewModelProvider);
+    ref.watch(gameViewModelProvider);
     final viewModel = ref.read(gameViewModelProvider.notifier);
 
     // Get the undo/redo manager if available
@@ -116,7 +115,7 @@ class QuickUndoButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final gameState = ref.watch(gameViewModelProvider);
+    ref.watch(gameViewModelProvider);
     final viewModel = ref.read(gameViewModelProvider.notifier);
     final undoRedoManager = viewModel.getUndoRedoManager();
 
@@ -146,7 +145,7 @@ class UndoRedoHistory extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final gameState = ref.watch(gameViewModelProvider);
+    ref.watch(gameViewModelProvider);
     final viewModel = ref.read(gameViewModelProvider.notifier);
     final undoRedoManager = viewModel.getUndoRedoManager();
 

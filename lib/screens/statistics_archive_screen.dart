@@ -30,19 +30,17 @@ class _StatisticsArchiveScreenState
 
   @override
   Widget build(BuildContext context) {
-    final archiveAsync = ref.watch(statisticsArchiveProvider);
+    final archiveState = ref.watch(statisticsArchiveProvider);
     final theme = Theme.of(context);
 
-    return archiveAsync.when(
-      data: (archiveState) {
-        final periods = [
-          archiveState.dailySnapshots,
-          archiveState.weeklySnapshots,
-          archiveState.monthlySnapshots,
-        ];
-        final periodLabels = ['日別', '週別', '月別'];
+    final periods = [
+      archiveState.dailySnapshots,
+      archiveState.weeklySnapshots,
+      archiveState.monthlySnapshots,
+    ];
+    final periodLabels = ['日別', '週別', '月別'];
 
-        return Scaffold(
+    return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
           appBar: AppBar(
             title: const Text('統計アーカイブ'),
@@ -120,16 +118,6 @@ class _StatisticsArchiveScreenState
             ],
           ),
         );
-      },
-      loading: () => Scaffold(
-        appBar: AppBar(title: const Text('統計アーカイブ')),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, stack) => Scaffold(
-        appBar: AppBar(title: const Text('統計アーカイブ')),
-        body: Center(child: Text('エラー: $error')),
-      ),
-    );
   }
 }
 
