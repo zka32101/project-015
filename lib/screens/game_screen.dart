@@ -32,6 +32,7 @@ import 'player_search_screen.dart';
 import 'replay_sharing_screen.dart';
 import 'event_system_screen.dart';
 import 'customization_screen.dart';
+import 'performance_optimization_screen.dart';
 import 'game_modes_screen.dart';
 import 'game_records_browser.dart';
 import 'leaderboard_screen.dart';
@@ -479,6 +480,16 @@ class GameScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('performance_button'),
+            icon: const Icon(Icons.speed),
+            tooltip: 'パフォーマンス',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PerformanceOptimizationScreen()),
               );
             },
           ),
