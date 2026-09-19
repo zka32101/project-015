@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/game_notation.dart';
 import '../engine/game_storage.dart';
 import '../engine/game_replay.dart';
 import '../engine/models.dart';
@@ -290,7 +291,21 @@ class QuickSaveButton extends ConsumerWidget {
 
     return ElevatedButton.icon(
       onPressed: () async {
-        final record = ref.read(gameViewModelProvider.notifier).createGameRecord();
+        final resultText = switch (gameState.game.result) {
+          GameResult.playerAWins => '藍陣営の勝利',
+          GameResult.playerBWins => '朱陣営の勝利',
+          GameResult.draw => '引き分け',
+          GameResult.ongoing => '進行中',
+        };
+        final record = GameRecord(
+          playerAName: '藍陣営',
+          playerBName: '朱陣営',
+          aiDifficulty: gameState.aiDifficulty?.name,
+          moves: gameState.game.moveHistory,
+          playedAt: gameState.gameStartTime,
+          result: resultText,
+          duration: DateTime.now().difference(gameState.gameStartTime).inSeconds,
+        );
         final success = await GameStorage.saveGame(record);
 
         onSaveComplete(success);
