@@ -93,10 +93,12 @@ class GameScreen extends ConsumerWidget {
         ),
         backgroundColor: theme.woodDark,
         actions: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
+          SizedBox(
+            width: 220,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
           IconButton(
             key: const Key('daily_puzzle_button'),
             icon: const Icon(Icons.calendar_today),
@@ -494,7 +496,8 @@ class GameScreen extends ConsumerWidget {
               );
             },
           ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
