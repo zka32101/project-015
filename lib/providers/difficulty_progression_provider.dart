@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/ai.dart';
-import '../engine/models.dart';
 import 'game_analytics_provider.dart';
 
 /// Difficulty progression tier
@@ -156,7 +155,6 @@ class DifficultyProgressionNotifier
     AiDifficulty? currentDifficulty,
   ) {
     final allProgressionData = <ProgressionData>[];
-    ProgressionData? nextTier;
 
     for (int i = 0; i < _tiers.length; i++) {
       final tier = _tiers[i];
@@ -201,13 +199,6 @@ class DifficultyProgressionNotifier
       );
 
       allProgressionData.add(progressData);
-
-      // Get next tier if current is this one
-      if (isCurrentLevel && i < _tiers.length - 1) {
-        nextTier = allProgressionData.length < _tiers.length
-            ? null
-            : null; // Will be set in next iteration
-      }
     }
 
     // Find next tier progression

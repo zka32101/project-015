@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../engine/ai.dart';
 import '../engine/board_theme.dart';
-import '../engine/statistics.dart';
 import '../viewmodels/game_view_model.dart';
 
 class StatisticsScreen extends ConsumerWidget {

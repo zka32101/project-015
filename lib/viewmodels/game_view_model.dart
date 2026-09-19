@@ -395,7 +395,6 @@ class GameViewModel extends Notifier<GameViewState> {
     if (piece == null) return const [];
 
     final affected = <Square>[];
-    final target = board.at(move.to);
 
     // The source square is always affected (piece moves from here)
     affected.add(move.from);
@@ -554,24 +553,6 @@ class GameViewModel extends Notifier<GameViewState> {
     );
   }
 
-  String _getGameResultString() {
-    switch (state.game.result) {
-      case GameResult.playerAWins:
-        final pieceCountA = state.game.board.pieceCount(Owner.playerA);
-        final pieceCountB = state.game.board.pieceCount(Owner.playerB);
-        return 'Player A (Black) wins $pieceCountA-$pieceCountB';
-      case GameResult.playerBWins:
-        final pieceCountA = state.game.board.pieceCount(Owner.playerA);
-        final pieceCountB = state.game.board.pieceCount(Owner.playerB);
-        return 'Player B (White) wins $pieceCountB-$pieceCountA';
-      case GameResult.draw:
-        return 'Draw';
-      case GameResult.ongoing:
-        return 'In progress';
-      default:
-        return 'Unknown result';
-    }
-  }
 }
 
 final gameViewModelProvider =

@@ -198,7 +198,6 @@ class DailyChallengesNotifier extends StateNotifier<DailyChallengesState> {
 
   /// Load challenges from preferences
   void _loadChallengesFromPrefs(SharedPreferences prefs) {
-    final completedIds = prefs.getStringList('completed_challenge_ids') ?? [];
     final totalRewardsTodayStr = prefs.getString('total_rewards_today');
 
     if (totalRewardsTodayStr != null) {

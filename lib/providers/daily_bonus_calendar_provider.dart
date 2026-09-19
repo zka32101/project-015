@@ -199,8 +199,6 @@ class DailyBonusCalendarNotifier
       final isToday = date.year == now.year &&
           date.month == now.month &&
           date.day == now.day;
-      final isFuture = date.isAfter(now);
-
       // Generate reward based on day (escalating rewards)
       final baseReward = 10 + (day ~/ 7) * 5; // +5 every week
       final bonusMultiplier = 1 + ((day - 1) % 7) * 0.1; // Escalates through week

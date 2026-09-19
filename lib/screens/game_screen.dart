@@ -6,17 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/ai.dart';
 import '../engine/ai_thinking_info.dart';
-import '../engine/animation_effects.dart';
 import '../engine/board_theme.dart';
 import '../engine/enhanced_board_themes.dart';
 import '../engine/game_state.dart';
 import '../engine/models.dart';
 import '../engine/particle_effects.dart';
 import '../engine/rank.dart';
-import '../engine/replay.dart';
 import '../engine/victory_effects.dart';
 import '../viewmodels/game_view_model.dart';
-import 'achievements_screen.dart';
 import 'avatars_screen.dart';
 import 'badges_screen.dart';
 import 'daily_bonus_calendar_screen.dart';

@@ -35,7 +35,6 @@ const _playerPiece1 = Square(2, 2);
 const _playerPiece2 = Square(2, 3);
 const _enemyPiece1 = Square(3, 2);
 const _enemyPiece2 = Square(3, 3);
-const _moveTarget = Square(2, 1);
 const _captureTarget = Square(3, 1);
 
 class _TutorialScreenState extends ConsumerState<TutorialScreen> {

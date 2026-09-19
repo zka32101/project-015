@@ -1,4 +1,3 @@
-import 'board.dart';
 import 'models.dart';
 
 /// Reversia/Othello opening book with standard opening sequences.

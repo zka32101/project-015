@@ -205,7 +205,6 @@ class TournamentsNotifier extends StateNotifier<TournamentsState> {
   /// Generate tournaments
   void _generateTournaments() {
     final now = DateTime.now();
-    final random = math.Random();
 
     // Active tournaments (ongoing)
     final activeTournaments = [

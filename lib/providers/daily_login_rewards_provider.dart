@@ -52,7 +52,6 @@ class LoginStreak {
 
   /// Check if streak is active (not broken)
   bool isStreakActive() {
-    final now = DateTime.now();
     final yesterdayEnd = DateTime.now().subtract(const Duration(days: 1));
     return lastLoginDate.isAfter(yesterdayEnd);
   }
@@ -227,7 +226,6 @@ class DailyLoginRewardsNotifier
       int newBest = state.streak.bestStreak;
 
       // Check if streak is broken
-      final expectedLastLogin = now.subtract(const Duration(days: 1));
       if (!state.streak.isStreakActive() && state.streak.currentStreak > 0) {
         // Streak was broken, reset to 1
         newStreak = 1;

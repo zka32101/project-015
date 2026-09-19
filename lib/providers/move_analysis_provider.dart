@@ -326,7 +326,6 @@ class MoveAnalysisNotifier extends StateNotifier<MoveAnalysisState> {
         .where((m) => m.quality == 'excellent' || m.quality == 'good')
         .length;
 
-    final total = earlyGood + midGood + lateGood;
     return '早盤: 安定、中盤: ${midGood > earlyGood ? "強い" : "要改善"}、終盤: ${lateGood > 0 ? "良い" : "課題あり"}';
   }
 
