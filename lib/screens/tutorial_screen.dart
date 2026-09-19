@@ -246,14 +246,17 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                         fontSize: 14,
                       ),
                     ),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: (currentIndex + 1) / stepCount,
-                        minHeight: 4,
-                        backgroundColor: Colors.white12,
-                        valueColor:
-                            AlwaysStoppedAnimation(theme.accentGold),
+                    SizedBox(
+                      width: 100,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: (currentIndex + 1) / stepCount,
+                          minHeight: 4,
+                          backgroundColor: Colors.white12,
+                          valueColor:
+                              AlwaysStoppedAnimation(theme.accentGold),
+                        ),
                       ),
                     ),
                   ],
