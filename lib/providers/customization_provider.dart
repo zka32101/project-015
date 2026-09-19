@@ -173,7 +173,7 @@ class CustomizationState {
     double? uiScale,
     bool? darkModeEnabled,
     bool? isLoading,
-    String? error,
+    Object? error = _unset,
   }) {
     return CustomizationState(
       boardStyles: boardStyles ?? this.boardStyles,
@@ -186,10 +186,15 @@ class CustomizationState {
       uiScale: uiScale ?? this.uiScale,
       darkModeEnabled: darkModeEnabled ?? this.darkModeEnabled,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: identical(error, _unset) ? this.error : error as String?,
     );
   }
 }
+
+/// Sentinel used by [CustomizationState.copyWith] to distinguish "field not
+/// passed" (keep current value) from "field explicitly passed as null"
+/// (clear the value).
+const Object _unset = Object();
 
 /// Notifier for customization
 class CustomizationNotifier extends StateNotifier<CustomizationState> {

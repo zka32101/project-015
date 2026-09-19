@@ -116,7 +116,7 @@ class EventSystemState {
     List<LimitedEvent>? completedEvents,
     List<EventReward>? claimedRewards,
     bool? isLoading,
-    String? error,
+    Object? error = _unset,
     int? totalParticipants,
   }) {
     return EventSystemState(
@@ -125,11 +125,16 @@ class EventSystemState {
       completedEvents: completedEvents ?? this.completedEvents,
       claimedRewards: claimedRewards ?? this.claimedRewards,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: identical(error, _unset) ? this.error : error as String?,
       totalParticipants: totalParticipants ?? this.totalParticipants,
     );
   }
 }
+
+/// Sentinel used by [EventSystemState.copyWith] to distinguish "field not
+/// passed" (keep current value) from "field explicitly passed as null"
+/// (clear the value).
+const Object _unset = Object();
 
 /// Notifier for event system
 class EventSystemNotifier extends StateNotifier<EventSystemState> {

@@ -98,7 +98,7 @@ class PerformanceOptimizationState {
     int? memoryUsageMB,
     double? fps,
     bool? isMonitoring,
-    String? error,
+    Object? error = _unset,
   }) {
     return PerformanceOptimizationState(
       metrics: metrics ?? this.metrics,
@@ -111,10 +111,15 @@ class PerformanceOptimizationState {
       maxMemoryMB: maxMemoryMB,
       fps: fps ?? this.fps,
       isMonitoring: isMonitoring ?? this.isMonitoring,
-      error: error,
+      error: identical(error, _unset) ? this.error : error as String?,
     );
   }
 }
+
+/// Sentinel used by [PerformanceOptimizationState.copyWith] to distinguish
+/// "field not passed" (keep current value) from "field explicitly passed as
+/// null" (clear the value).
+const Object _unset = Object();
 
 /// Notifier for performance optimization
 class PerformanceOptimizationNotifier

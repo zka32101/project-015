@@ -77,27 +77,31 @@ class _SearchBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.all(12),
-      child: SearchBar(
-        controller: controller,
-        hintText: 'プレイヤー名で検索...',
-        leading: const Padding(
-          padding: EdgeInsets.only(left: 8),
-          child: Icon(Icons.search),
-        ),
-        trailing: controller.text.isNotEmpty
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    controller.clear();
-                    ref.read(playerSearchProvider.notifier).clearSearch();
-                  },
-                ),
-              ]
-            : null,
-        onChanged: (value) {
-          ref.read(playerSearchProvider.notifier).searchPlayers(value);
-          (context as Element).markNeedsBuild();
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: controller,
+        builder: (context, value, _) {
+          return SearchBar(
+            controller: controller,
+            hintText: 'プレイヤー名で検索...',
+            leading: const Padding(
+              padding: EdgeInsets.only(left: 8),
+              child: Icon(Icons.search),
+            ),
+            trailing: value.text.isNotEmpty
+                ? [
+                    IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        controller.clear();
+                        ref.read(playerSearchProvider.notifier).clearSearch();
+                      },
+                    ),
+                  ]
+                : null,
+            onChanged: (value) {
+              ref.read(playerSearchProvider.notifier).searchPlayers(value);
+            },
+          );
         },
       ),
     );
@@ -174,8 +178,8 @@ class _SearchResultsTab extends ConsumerWidget {
 class _SuggestedPlayersTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final searchState = ref.watch(playerSearchProvider);
-    final suggested = searchState.getSuggestedPlayers();
+    ref.watch(playerSearchProvider);
+    final suggested = ref.read(playerSearchProvider.notifier).getSuggestedPlayers();
 
     if (suggested.isEmpty) {
       return Center(

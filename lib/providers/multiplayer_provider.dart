@@ -177,24 +177,31 @@ class MultiplayerState {
 
   MultiplayerState copyWith({
     List<OnlineLobby>? availableLobbies,
-    MultiplayerMatch? currentMatch,
+    Object? currentMatch = _unset,
     List<MatchResult>? matchHistory,
     bool? isSearchingForMatch,
     bool? isLoading,
-    String? error,
+    Object? error = _unset,
     int? onlinePlayersCount,
   }) {
     return MultiplayerState(
       availableLobbies: availableLobbies ?? this.availableLobbies,
-      currentMatch: currentMatch ?? this.currentMatch,
+      currentMatch: identical(currentMatch, _unset)
+          ? this.currentMatch
+          : currentMatch as MultiplayerMatch?,
       matchHistory: matchHistory ?? this.matchHistory,
       isSearchingForMatch: isSearchingForMatch ?? this.isSearchingForMatch,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: identical(error, _unset) ? this.error : error as String?,
       onlinePlayersCount: onlinePlayersCount ?? this.onlinePlayersCount,
     );
   }
 }
+
+/// Sentinel used by [MultiplayerState.copyWith] to distinguish "field not
+/// passed" (keep current value) from "field explicitly passed as null"
+/// (clear the value).
+const Object _unset = Object();
 
 /// Notifier for multiplayer and online battles
 class MultiplayerNotifier extends StateNotifier<MultiplayerState> {
@@ -345,11 +352,21 @@ class MultiplayerNotifier extends StateNotifier<MultiplayerState> {
   }
 
   Future<void> joinLobby(String lobbyId) async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, error: null);
     await Future.delayed(const Duration(seconds: 1));
 
-    final lobby = state.availableLobbies
-        .firstWhere((l) => l.id == lobbyId, orElse: () => throw 'Lobby not found');
+    OnlineLobby? lobby;
+    for (final l in state.availableLobbies) {
+      if (l.id == lobbyId) {
+        lobby = l;
+        break;
+      }
+    }
+
+    if (lobby == null) {
+      state = state.copyWith(isLoading: false, error: 'ロビーが見つかりませんでした');
+      return;
+    }
 
     // Simulate match starting
     final now = DateTime.now();
