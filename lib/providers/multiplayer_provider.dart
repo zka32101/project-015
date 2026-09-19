@@ -151,7 +151,7 @@ class MatchResult {
 
   bool get isWinForPlayer1 => winner == player1Name;
 
-  String get opponentFor(String playerName) =>
+  String opponentFor(String playerName) =>
       playerName == player1Name ? player2Name : player1Name;
 }
 
