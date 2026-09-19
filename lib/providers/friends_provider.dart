@@ -250,11 +250,11 @@ class FriendsState {
 
 /// Notifier for friends and social features
 class FriendsNotifier extends StateNotifier<FriendsState> {
-  final SharedPreferences prefs;
+  SharedPreferences? _prefs;
   static const _friendsKey = 'friends_list';
   static const _requestsKey = 'friend_requests';
 
-  FriendsNotifier(this.prefs)
+  FriendsNotifier()
       : super(const FriendsState(
           friends: [],
           friendRequests: [],
@@ -264,14 +264,16 @@ class FriendsNotifier extends StateNotifier<FriendsState> {
     _initialize();
   }
 
-  void _initialize() {
-    _loadFriends();
-    _loadRequests();
+  Future<void> _initialize() async {
+    final prefs = await SharedPreferences.getInstance();
+    _prefs = prefs;
+    _loadFriends(prefs);
+    _loadRequests(prefs);
     _generateActivityFeed();
     _generateChallenges();
   }
 
-  void _loadFriends() {
+  void _loadFriends(SharedPreferences prefs) {
     final stored = prefs.getStringList(_friendsKey);
     if (stored != null && stored.isNotEmpty) {
       final friends = stored
@@ -347,7 +349,7 @@ class FriendsNotifier extends StateNotifier<FriendsState> {
     _persistFriends();
   }
 
-  void _loadRequests() {
+  void _loadRequests(SharedPreferences prefs) {
     final stored = prefs.getStringList(_requestsKey);
     if (stored != null && stored.isNotEmpty) {
       final requests = stored
@@ -448,12 +450,14 @@ class FriendsNotifier extends StateNotifier<FriendsState> {
   }
 
   Future<void> _persistFriends() async {
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
     final encoded =
         state.friends.map((f) => jsonEncode(f.toJson())).toList();
     await prefs.setStringList(_friendsKey, encoded);
   }
 
   Future<void> _persistRequests() async {
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
     final encoded =
         state.friendRequests.map((r) => jsonEncode(r.toJson())).toList();
     await prefs.setStringList(_requestsKey, encoded);
@@ -597,8 +601,5 @@ class FriendsNotifier extends StateNotifier<FriendsState> {
 /// Riverpod provider for friends and social features
 final friendsProvider =
     StateNotifierProvider<FriendsNotifier, FriendsState>(
-  (ref) async {
-    final prefs = await SharedPreferences.getInstance();
-    return FriendsNotifier(prefs);
-  },
+  (ref) => FriendsNotifier(),
 );

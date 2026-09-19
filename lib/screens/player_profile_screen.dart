@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../engine/board_theme.dart';
+import '../engine/game_record.dart';
+import '../engine/models.dart';
 import '../providers/player_profile_provider.dart';
 
 class PlayerProfileScreen extends ConsumerWidget {

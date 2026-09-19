@@ -8,12 +8,10 @@ class AvatarsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final avatarsAsync = ref.watch(avatarsProvider);
+    final avatarsState = ref.watch(avatarsProvider);
     final theme = Theme.of(context);
 
-    return avatarsAsync.when(
-      data: (avatarsState) {
-        return Scaffold(
+    return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
           appBar: AppBar(
             title: const Text('アバター＆コスメティック'),
@@ -100,16 +98,6 @@ class AvatarsScreen extends ConsumerWidget {
               const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
             ],
           ),
-        );
-      },
-      loading: () => Scaffold(
-        appBar: AppBar(title: const Text('アバター＆コスメティック')),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, stack) => Scaffold(
-        appBar: AppBar(title: const Text('アバター＆コスメティック')),
-        body: Center(child: Text('エラー: $error')),
-      ),
     );
   }
 }
@@ -335,28 +323,28 @@ class _AvatarGrid extends StatelessWidget {
             child: Stack(
               children: [
                 Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        avatar.emoji,
-                        style: TextStyle(
-                          fontSize: 40,
-                          opacity: avatar.isUnlocked ? 1.0 : 0.4,
+                  child: Opacity(
+                    opacity: avatar.isUnlocked ? 1.0 : 0.4,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          avatar.emoji,
+                          style: const TextStyle(fontSize: 40),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        avatar.name,
-                        style: TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade700,
-                          overflow: TextOverflow.ellipsis,
+                        const SizedBox(height: 4),
+                        Text(
+                          avatar.name,
+                          style: TextStyle(
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade700,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          maxLines: 1,
                         ),
-                        maxLines: 1,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 if (!avatar.isUnlocked)
@@ -443,11 +431,11 @@ class _CosmeticCard extends ConsumerWidget {
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                cosmetic.emoji,
-                style: TextStyle(
-                  fontSize: 36,
-                  opacity: cosmetic.isUnlocked ? 1.0 : 0.4,
+              Opacity(
+                opacity: cosmetic.isUnlocked ? 1.0 : 0.4,
+                child: Text(
+                  cosmetic.emoji,
+                  style: const TextStyle(fontSize: 36),
                 ),
               ),
               const SizedBox(height: 8),

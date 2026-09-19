@@ -172,20 +172,27 @@ class ReplayStudyState {
 
 /// Notifier for the replay study mode
 class ReplayStudyNotifier extends StateNotifier<ReplayStudyState> {
-  final SharedPreferences prefs;
+  SharedPreferences? _prefs;
   static const _studiedGamesKey = 'replay_study_games';
   static const _lastStudyDateKey = 'replay_study_last_date';
   static const _studyStreakKey = 'replay_study_streak';
 
-  ReplayStudyNotifier(this.prefs)
-      : super(ReplayStudyState(
-          studiedGames: const {},
-          studyStreak: prefs.getInt(_studyStreakKey) ?? 0,
+  ReplayStudyNotifier()
+      : super(const ReplayStudyState(
+          studiedGames: {},
+          studyStreak: 0,
         )) {
-    _loadStudiedGames();
+    _initialize();
   }
 
-  void _loadStudiedGames() {
+  Future<void> _initialize() async {
+    final prefs = await SharedPreferences.getInstance();
+    _prefs = prefs;
+    state = state.copyWith(studyStreak: prefs.getInt(_studyStreakKey) ?? 0);
+    _loadStudiedGames(prefs);
+  }
+
+  void _loadStudiedGames(SharedPreferences prefs) {
     final stored = prefs.getStringList(_studiedGamesKey);
     if (stored == null || stored.isEmpty) return;
 
@@ -208,6 +215,7 @@ class ReplayStudyNotifier extends StateNotifier<ReplayStudyState> {
   }
 
   Future<void> _persist() async {
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
     final encoded = state.studiedGames.values
         .map((g) => jsonEncode(g.toJson()))
         .toList();
@@ -249,6 +257,7 @@ class ReplayStudyNotifier extends StateNotifier<ReplayStudyState> {
   }
 
   Future<void> _updateStreak() async {
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
     final today = DateTime.now();
     final todayKey = '${today.year}-${today.month}-${today.day}';
     final lastDateStr = prefs.getString(_lastStudyDateKey);
@@ -349,10 +358,7 @@ class ReplayStudyNotifier extends StateNotifier<ReplayStudyState> {
 /// Riverpod provider for replay study mode
 final replayStudyProvider =
     StateNotifierProvider<ReplayStudyNotifier, ReplayStudyState>(
-  (ref) async {
-    final prefs = await SharedPreferences.getInstance();
-    return ReplayStudyNotifier(prefs);
-  },
+  (ref) => ReplayStudyNotifier(),
 );
 
 /// Convenience provider exposing the list of studyable games from game history

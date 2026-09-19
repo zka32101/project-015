@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../engine/ai.dart';
 import '../engine/ai_thinking_info.dart';
 import '../engine/game_analytics.dart';
-import '../engine/game_notation.dart';
+import '../engine/game_notation.dart' hide GameRecord;
 import '../engine/game_record.dart';
 import '../engine/game_state.dart';
 import '../engine/game_undo_redo.dart';
@@ -36,7 +36,7 @@ class GameViewState {
   final AiMoveResult? aiThinkingInfo;
   final DateTime gameStartTime;
 
-  const GameViewState({
+  GameViewState({
     required this.game,
     this.selected,
     this.legalDestinations = const [],

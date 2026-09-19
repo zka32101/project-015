@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/ai.dart';
 import '../engine/models.dart';
 import 'game_analytics_provider.dart';
 

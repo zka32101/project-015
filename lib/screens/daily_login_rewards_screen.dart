@@ -8,12 +8,10 @@ class DailyLoginRewardsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final rewardsState = ref.watch(dailyLoginRewardsSyncProvider);
+    final state = ref.watch(dailyLoginRewardsProvider);
     final theme = Theme.of(context);
 
-    return rewardsState.when(
-      data: (state) {
-        return Scaffold(
+    return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
           appBar: AppBar(
             title: const Text('デイリーリワード'),
@@ -104,16 +102,6 @@ class DailyLoginRewardsScreen extends ConsumerWidget {
             ],
           ),
         );
-      },
-      loading: () => Scaffold(
-        appBar: AppBar(title: const Text('デイリーリワード')),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, stack) => Scaffold(
-        appBar: AppBar(title: const Text('デイリーリワード')),
-        body: Center(child: Text('エラー: $error')),
-      ),
-    );
   }
 }
 

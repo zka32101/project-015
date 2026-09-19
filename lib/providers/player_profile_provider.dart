@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/game_analytics.dart';
 import '../engine/game_record.dart';
+import '../engine/models.dart';
+import '../engine/statistics.dart';
 import 'achievements_provider.dart';
 import 'game_records_provider.dart';
 
@@ -203,7 +205,7 @@ class PlayerProfileNotifier extends StateNotifier<PlayerProfileState> {
 
 /// Riverpod provider for game analytics
 final gameAnalyticsProvider = Provider<GameAnalytics>((ref) {
-  return GameAnalytics();
+  return GameAnalytics(baseStats: GameStatistics());
 });
 
 /// Riverpod provider for player profile

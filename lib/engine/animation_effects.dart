@@ -100,7 +100,7 @@ class AnimationCurves {
   static const pieceMove = Cubic(0.34, 1.56, 0.64, 1); // slight overshoot
   static const pieceMoveEaseInOut = Cubic(0.42, 0.0, 0.58, 1.0);
   static const capture = Curves.easeInOutQuart;
-  static const victory = Curves.easeOutElastic;
+  static const victory = Curves.elasticOut;
   static const threat = Curves.easeInOut;
 }
 

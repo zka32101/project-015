@@ -137,29 +137,33 @@ class DailyChallengesState {
 
 /// Notifier for daily challenges
 class DailyChallengesNotifier extends StateNotifier<DailyChallengesState> {
-  final SharedPreferences prefs;
+  SharedPreferences? _prefs;
 
-  DailyChallengesNotifier(this.prefs)
-      : super(_buildInitialState(prefs)) {
+  DailyChallengesNotifier() : super(_buildInitialState()) {
     _initializeChallenges();
   }
 
   /// Initialize challenges
-  void _initializeChallenges() {
-    _generateTodaysChallenges();
-  }
-
-  /// Build initial state
-  static DailyChallengesState _buildInitialState(SharedPreferences prefs) {
-    return DailyChallengesState(
-      todaysChallenges: [],
-      currentDate: DateTime.now(),
+  Future<void> _initializeChallenges() async {
+    final prefs = await SharedPreferences.getInstance();
+    _prefs = prefs;
+    _generateTodaysChallenges(prefs);
+    state = state.copyWith(
       completionStreak: prefs.getInt('challenge_completion_streak') ?? 0,
     );
   }
 
+  /// Build initial state
+  static DailyChallengesState _buildInitialState() {
+    return DailyChallengesState(
+      todaysChallenges: [],
+      currentDate: DateTime.now(),
+      completionStreak: 0,
+    );
+  }
+
   /// Generate today's challenges
-  void _generateTodaysChallenges() {
+  void _generateTodaysChallenges(SharedPreferences prefs) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
@@ -174,7 +178,7 @@ class DailyChallengesNotifier extends StateNotifier<DailyChallengesState> {
       );
       if (lastDate == today) {
         // Already generated for today, load from prefs
-        _loadChallengesFromPrefs();
+        _loadChallengesFromPrefs(prefs);
         return;
       }
     }
@@ -193,7 +197,7 @@ class DailyChallengesNotifier extends StateNotifier<DailyChallengesState> {
   }
 
   /// Load challenges from preferences
-  void _loadChallengesFromPrefs() {
+  void _loadChallengesFromPrefs(SharedPreferences prefs) {
     final completedIds = prefs.getStringList('completed_challenge_ids') ?? [];
     final totalRewardsTodayStr = prefs.getString('total_rewards_today');
 
@@ -309,6 +313,7 @@ class DailyChallengesNotifier extends StateNotifier<DailyChallengesState> {
     if (challenge.isCompleted) return;
 
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       final completed = [...state.todaysChallenges];
       final index = completed
           .indexWhere((c) => c.id == challenge.id);
@@ -385,10 +390,7 @@ class DailyChallengesNotifier extends StateNotifier<DailyChallengesState> {
 /// Riverpod provider for daily challenges
 final dailyChallengesProvider =
     StateNotifierProvider<DailyChallengesNotifier, DailyChallengesState>(
-  (ref) async {
-    final prefs = await SharedPreferences.getInstance();
-    return DailyChallengesNotifier(prefs);
-  },
+  (ref) => DailyChallengesNotifier(),
 );
 
 /// Alternative sync provider (for testing)

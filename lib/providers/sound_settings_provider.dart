@@ -104,22 +104,23 @@ class SoundSettingsState {
 
 /// Notifier for sound settings
 class SoundSettingsNotifier extends StateNotifier<SoundSettingsState> {
-  final SharedPreferences prefs;
+  SharedPreferences? _prefs;
 
-  SoundSettingsNotifier(this.prefs)
-      : super(_buildInitialState(prefs)) {
+  SoundSettingsNotifier() : super(_buildInitialState()) {
     _initializeSettings();
   }
 
   /// Initialize settings
-  void _initializeSettings() {
-    _loadSettings();
+  Future<void> _initializeSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    _prefs = prefs;
+    _loadSettings(prefs);
   }
 
   /// Build initial state
-  static SoundSettingsState _buildInitialState(SharedPreferences prefs) {
-    return SoundSettingsState(
-      audioSettings: _loadAudioSettings(prefs),
+  static SoundSettingsState _buildInitialState() {
+    return const SoundSettingsState(
+      audioSettings: AudioSettings(),
     );
   }
 
@@ -160,7 +161,7 @@ class SoundSettingsNotifier extends StateNotifier<SoundSettingsState> {
   }
 
   /// Load settings from preferences
-  void _loadSettings() async {
+  void _loadSettings(SharedPreferences prefs) {
     final audioSettings = _loadAudioSettings(prefs);
     state = state.copyWith(audioSettings: audioSettings);
   }
@@ -168,6 +169,7 @@ class SoundSettingsNotifier extends StateNotifier<SoundSettingsState> {
   /// Toggle sound
   Future<void> toggleSound(bool enabled) async {
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       await prefs.setBool('sound_enabled', enabled);
       state = state.copyWith(
         audioSettings: state.audioSettings.copyWith(soundEnabled: enabled),
@@ -180,6 +182,7 @@ class SoundSettingsNotifier extends StateNotifier<SoundSettingsState> {
   /// Toggle music
   Future<void> toggleMusic(bool enabled) async {
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       await prefs.setBool('music_enabled', enabled);
       state = state.copyWith(
         audioSettings: state.audioSettings.copyWith(musicEnabled: enabled),
@@ -192,6 +195,7 @@ class SoundSettingsNotifier extends StateNotifier<SoundSettingsState> {
   /// Toggle vibration
   Future<void> toggleVibration(bool enabled) async {
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       await prefs.setBool('vibration_enabled', enabled);
       state = state.copyWith(
         audioSettings:
@@ -205,6 +209,7 @@ class SoundSettingsNotifier extends StateNotifier<SoundSettingsState> {
   /// Set sound volume
   Future<void> setSoundVolume(double volume) async {
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       await prefs.setDouble('sound_volume', volume);
       state = state.copyWith(
         audioSettings: state.audioSettings.copyWith(soundVolume: volume),
@@ -217,6 +222,7 @@ class SoundSettingsNotifier extends StateNotifier<SoundSettingsState> {
   /// Set music volume
   Future<void> setMusicVolume(double volume) async {
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       await prefs.setDouble('music_volume', volume);
       state = state.copyWith(
         audioSettings: state.audioSettings.copyWith(musicVolume: volume),
@@ -229,6 +235,7 @@ class SoundSettingsNotifier extends StateNotifier<SoundSettingsState> {
   /// Toggle mute during calls
   Future<void> toggleMuteDuringCalls(bool enabled) async {
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       await prefs.setBool('mute_during_calls', enabled);
       state = state.copyWith(
         audioSettings:
@@ -242,6 +249,7 @@ class SoundSettingsNotifier extends StateNotifier<SoundSettingsState> {
   /// Toggle mute when silent
   Future<void> toggleMuteWhenSilent(bool enabled) async {
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       await prefs.setBool('mute_when_silent', enabled);
       state = state.copyWith(
         audioSettings:
@@ -255,6 +263,7 @@ class SoundSettingsNotifier extends StateNotifier<SoundSettingsState> {
   /// Toggle sound effect
   Future<void> toggleSoundEffect(SoundEffect effect, bool enabled) async {
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       await prefs.setBool('sound_effect_${effect.name}', enabled);
       final updatedSounds = {...state.audioSettings.enabledSounds};
       updatedSounds[effect] = enabled;
@@ -271,6 +280,7 @@ class SoundSettingsNotifier extends StateNotifier<SoundSettingsState> {
   /// Toggle music track
   Future<void> toggleMusicTrack(MusicTrack track, bool enabled) async {
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       await prefs.setBool('music_track_${track.name}', enabled);
       final updatedMusic = {...state.audioSettings.enabledMusic};
       updatedMusic[track] = enabled;
@@ -287,6 +297,7 @@ class SoundSettingsNotifier extends StateNotifier<SoundSettingsState> {
   /// Reset to default settings
   Future<void> resetToDefaults() async {
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       final defaultSettings = const AudioSettings();
       await prefs.setBool('sound_enabled', defaultSettings.soundEnabled);
       await prefs.setBool('music_enabled', defaultSettings.musicEnabled);
@@ -308,10 +319,7 @@ class SoundSettingsNotifier extends StateNotifier<SoundSettingsState> {
 /// Riverpod provider for sound settings
 final soundSettingsProvider =
     StateNotifierProvider<SoundSettingsNotifier, SoundSettingsState>(
-  (ref) async {
-    final prefs = await SharedPreferences.getInstance();
-    return SoundSettingsNotifier(prefs);
-  },
+  (ref) => SoundSettingsNotifier(),
 );
 
 /// Alternative sync provider (for testing)

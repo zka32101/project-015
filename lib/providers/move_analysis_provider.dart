@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/game_record.dart';
+import '../engine/models.dart';
 
 /// Analysis of a single move
 class MoveAnalysis {
@@ -156,6 +157,18 @@ class MoveAnalysisState {
     this.isLoading = false,
     this.error,
   });
+
+  MoveAnalysisState copyWith({
+    GameMovesAnalysis? analysis,
+    bool? isLoading,
+    String? error,
+  }) {
+    return MoveAnalysisState(
+      analysis: analysis ?? this.analysis,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+    );
+  }
 }
 
 /// Notifier for move analysis
@@ -214,7 +227,7 @@ class MoveAnalysisNotifier extends StateNotifier<MoveAnalysisState> {
             acceptableCount * 1 +
             suboptimalCount * 0.5) /
         (moveCount * 2);
-    final accuracy = (qualityScore * 100).clamp(0, 100);
+    final accuracy = (qualityScore * 100).clamp(0, 100).toDouble();
 
     return GameMovesAnalysis(
       gameRecord: gameRecord,
@@ -389,18 +402,6 @@ class MoveAnalysisNotifier extends StateNotifier<MoveAnalysisState> {
   /// Clear analysis
   void clear() {
     state = const MoveAnalysisState();
-  }
-
-  MoveAnalysisState copyWith({
-    GameMovesAnalysis? analysis,
-    bool? isLoading,
-    String? error,
-  }) {
-    return MoveAnalysisState(
-      analysis: analysis ?? state.analysis,
-      isLoading: isLoading ?? state.isLoading,
-      error: error,
-    );
   }
 }
 

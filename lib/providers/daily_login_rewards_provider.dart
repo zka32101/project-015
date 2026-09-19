@@ -141,22 +141,18 @@ class DailyLoginRewardsState {
 /// Notifier for daily login rewards
 class DailyLoginRewardsNotifier
     extends StateNotifier<DailyLoginRewardsState> {
-  final SharedPreferences prefs;
+  SharedPreferences? _prefs;
 
-  DailyLoginRewardsNotifier(this.prefs)
-      : super(_buildInitialState(prefs)) {
+  DailyLoginRewardsNotifier()
+      : super(_buildInitialState()) {
     _initializeRewards();
   }
 
   /// Initialize rewards
-  void _initializeRewards() {
-    _updateStreak();
-  }
+  Future<void> _initializeRewards() async {
+    final prefs = await SharedPreferences.getInstance();
+    _prefs = prefs;
 
-  /// Build initial state
-  static DailyLoginRewardsState _buildInitialState(
-    SharedPreferences prefs,
-  ) {
     final streak = _loadOrCreateStreak(prefs);
     final rewardTiers = _generateRewardTiers();
 
@@ -167,10 +163,29 @@ class DailyLoginRewardsNotifier
       todayReward = (10 * multiplier).toInt();
     }
 
-    return DailyLoginRewardsState(
+    state = state.copyWith(
       streak: streak,
       todayRewardPoints: todayReward,
       hasClaimedToday: !streak.canClaimToday(),
+      rewardTiers: rewardTiers,
+    );
+
+    await _updateStreak(prefs);
+  }
+
+  /// Build initial state
+  static DailyLoginRewardsState _buildInitialState() {
+    final rewardTiers = _generateRewardTiers();
+
+    return DailyLoginRewardsState(
+      streak: LoginStreak(
+        currentStreak: 0,
+        bestStreak: 0,
+        totalLoginDays: 0,
+        lastLoginDate: DateTime.now().subtract(const Duration(days: 1)),
+      ),
+      todayRewardPoints: 10,
+      hasClaimedToday: false,
       rewardTiers: rewardTiers,
       isLoading: false,
     );
@@ -199,7 +214,7 @@ class DailyLoginRewardsNotifier
   }
 
   /// Update streak
-  void _updateStreak() async {
+  Future<void> _updateStreak(SharedPreferences prefs) async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final lastLogin = DateTime(state.streak.lastLoginDate.year,
@@ -261,6 +276,7 @@ class DailyLoginRewardsNotifier
 
     try {
       // Save reward claim
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       await prefs.setString('last_reward_claimed', DateTime.now().toIso8601String());
 
       // In a real app, would add reward to player account here
@@ -334,16 +350,5 @@ class DailyLoginRewardsNotifier
 /// Riverpod provider for daily login rewards
 final dailyLoginRewardsProvider =
     StateNotifierProvider<DailyLoginRewardsNotifier, DailyLoginRewardsState>(
-        (ref) async {
-  final prefs = await SharedPreferences.getInstance();
-  return DailyLoginRewardsNotifier(prefs);
-});
-
-/// Alternative sync provider
-final dailyLoginRewardsSyncProvider =
-    StateNotifierProvider<DailyLoginRewardsNotifier, DailyLoginRewardsState>(
-        (ref) {
-  // This will be replaced with actual SharedPreferences instance
-  // For now, returns a provider that needs initialization
-  throw UnimplementedError();
-});
+  (ref) => DailyLoginRewardsNotifier(),
+);

@@ -8,12 +8,10 @@ class TournamentsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tournamentsAsync = ref.watch(tournamentsProvider);
+    final tournamentsState = ref.watch(tournamentsProvider);
     final theme = Theme.of(context);
 
-    return tournamentsAsync.when(
-      data: (tournamentsState) {
-        return Scaffold(
+    return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
           appBar: AppBar(
             title: const Text('大会'),
@@ -134,16 +132,6 @@ class TournamentsScreen extends ConsumerWidget {
             ],
           ),
         );
-      },
-      loading: () => Scaffold(
-        appBar: AppBar(title: const Text('大会')),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, stack) => Scaffold(
-        appBar: AppBar(title: const Text('大会')),
-        body: Center(child: Text('エラー: $error')),
-      ),
-    );
   }
 }
 

@@ -8,94 +8,82 @@ class DailyBonusCalendarScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final calendarAsync = ref.watch(dailyBonusCalendarProvider);
+    final calendarState = ref.watch(dailyBonusCalendarProvider);
     final theme = Theme.of(context);
 
-    return calendarAsync.when(
-      data: (calendarState) {
-        return Scaffold(
-          backgroundColor: theme.scaffoldBackgroundColor,
-          appBar: AppBar(
-            title: const Text('ログインカレンダー'),
-            elevation: 0,
-          ),
-          body: CustomScrollView(
-            slivers: [
-              // Streak and rewards header
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: _StreakHeader(
-                    currentStreak: calendarState.currentStreak,
-                    bestStreak: calendarState.bestStreak,
-                    totalBonusEarned: calendarState.totalBonusEarned,
-                  ),
-                ),
-              ),
-              const SliverPadding(padding: EdgeInsets.only(top: 8)),
-
-              // Current month calendar
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _MonthCalendar(
-                    month: calendarState.currentMonth,
-                    onClaimBonus: (bonus) {
-                      ref
-                          .read(dailyBonusCalendarProvider.notifier)
-                          .claimBonus(bonus);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${bonus.rewardPoints}⭐を獲得'),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              const SliverPadding(padding: EdgeInsets.only(top: 24)),
-
-              // Previous month (if available)
-              if (calendarState.previousMonth != null) ...[
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      '前月',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                const SliverPadding(padding: EdgeInsets.only(top: 12)),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _MonthCalendar(
-                      month: calendarState.previousMonth!,
-                      onClaimBonus: (bonus) {
-                        ref
-                            .read(dailyBonusCalendarProvider.notifier)
-                            .claimBonus(bonus);
-                      },
-                    ),
-                  ),
-                ),
-              ],
-              const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
-            ],
-          ),
-        );
-      },
-      loading: () => Scaffold(
-        appBar: AppBar(title: const Text('ログインカレンダー')),
-        body: const Center(child: CircularProgressIndicator()),
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text('ログインカレンダー'),
+        elevation: 0,
       ),
-      error: (error, stack) => Scaffold(
-        appBar: AppBar(title: const Text('ログインカレンダー')),
-        body: Center(child: Text('エラー: $error')),
+      body: CustomScrollView(
+        slivers: [
+          // Streak and rewards header
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: _StreakHeader(
+                currentStreak: calendarState.currentStreak,
+                bestStreak: calendarState.bestStreak,
+                totalBonusEarned: calendarState.totalBonusEarned,
+              ),
+            ),
+          ),
+          const SliverPadding(padding: EdgeInsets.only(top: 8)),
+
+          // Current month calendar
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _MonthCalendar(
+                month: calendarState.currentMonth,
+                onClaimBonus: (bonus) {
+                  ref
+                      .read(dailyBonusCalendarProvider.notifier)
+                      .claimBonus(bonus);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${bonus.rewardPoints}⭐を獲得'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          const SliverPadding(padding: EdgeInsets.only(top: 24)),
+
+          // Previous month (if available)
+          if (calendarState.previousMonth != null) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  '前月',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            const SliverPadding(padding: EdgeInsets.only(top: 12)),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _MonthCalendar(
+                  month: calendarState.previousMonth!,
+                  onClaimBonus: (bonus) {
+                    ref
+                        .read(dailyBonusCalendarProvider.notifier)
+                        .claimBonus(bonus);
+                  },
+                ),
+              ),
+            ),
+          ],
+          const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+        ],
       ),
     );
   }

@@ -8,12 +8,10 @@ class SkillRatingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ratingAsync = ref.watch(skillRatingProvider);
+    final ratingState = ref.watch(skillRatingProvider);
     final theme = Theme.of(context);
 
-    return ratingAsync.when(
-      data: (ratingState) {
-        return Scaffold(
+    return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
           appBar: AppBar(
             title: const Text('スキルレーティング'),
@@ -121,16 +119,6 @@ class SkillRatingScreen extends ConsumerWidget {
               const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
             ],
           ),
-        );
-      },
-      loading: () => Scaffold(
-        appBar: AppBar(title: const Text('スキルレーティング')),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, stack) => Scaffold(
-        appBar: AppBar(title: const Text('スキルレーティング')),
-        body: Center(child: Text('エラー: $error')),
-      ),
     );
   }
 }

@@ -161,29 +161,36 @@ class AvatarsState {
 
 /// Notifier for avatars
 class AvatarsNotifier extends StateNotifier<AvatarsState> {
-  final SharedPreferences prefs;
+  SharedPreferences? _prefs;
 
-  AvatarsNotifier(this.prefs)
-      : super(_buildInitialState(prefs)) {
+  AvatarsNotifier() : super(_buildInitialState()) {
     _initializeAvatars();
   }
 
-  static AvatarsState _buildInitialState(SharedPreferences prefs) {
-    return AvatarsState(
+  static AvatarsState _buildInitialState() {
+    return const AvatarsState(
       availableAvatars: [],
       availableCosmetics: [],
-      totalAvatarsUnlocked: prefs.getInt('total_avatars_unlocked') ?? 1,
-      totalCosmeticsUnlocked: prefs.getInt('total_cosmetics_unlocked') ?? 0,
+      totalAvatarsUnlocked: 1,
+      totalCosmeticsUnlocked: 0,
     );
   }
 
-  void _initializeAvatars() {
-    _generateAvatars();
+  Future<void> _initializeAvatars() async {
+    final prefs = await SharedPreferences.getInstance();
+    _prefs = prefs;
+
+    state = state.copyWith(
+      totalAvatarsUnlocked: prefs.getInt('total_avatars_unlocked') ?? 1,
+      totalCosmeticsUnlocked: prefs.getInt('total_cosmetics_unlocked') ?? 0,
+    );
+
+    _generateAvatars(prefs);
     _generateCosmetics();
-    _loadEquippedAvatar();
+    _loadEquippedAvatar(prefs);
   }
 
-  void _generateAvatars() {
+  void _generateAvatars(SharedPreferences prefs) {
     final avatars = [
       // Classic avatars
       Avatar(
@@ -406,7 +413,7 @@ class AvatarsNotifier extends StateNotifier<AvatarsState> {
     );
   }
 
-  void _loadEquippedAvatar() {
+  void _loadEquippedAvatar(SharedPreferences prefs) {
     final selectedId = prefs.getString('selected_avatar_id');
     if (selectedId != null) {
       final avatar = state.availableAvatars.firstWhere(
@@ -421,6 +428,7 @@ class AvatarsNotifier extends StateNotifier<AvatarsState> {
     if (!avatar.isUnlocked) return;
 
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       await prefs.setString('selected_avatar_id', avatar.id);
 
       final updated = state.availableAvatars
@@ -446,6 +454,7 @@ class AvatarsNotifier extends StateNotifier<AvatarsState> {
               : a)
           .toList();
 
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       await prefs.setInt(
         'total_avatars_unlocked',
         updated.where((a) => a.isUnlocked).length,
@@ -475,6 +484,7 @@ class AvatarsNotifier extends StateNotifier<AvatarsState> {
               : a)
           .toList();
 
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       await prefs.setStringList('equipped_cosmetics', equipped);
 
       state = state.copyWith(
@@ -502,6 +512,7 @@ class AvatarsNotifier extends StateNotifier<AvatarsState> {
               : a)
           .toList();
 
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       await prefs.setStringList('equipped_cosmetics', equipped);
 
       state = state.copyWith(
@@ -523,6 +534,7 @@ class AvatarsNotifier extends StateNotifier<AvatarsState> {
               : c)
           .toList();
 
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       await prefs.setInt(
         'total_cosmetics_unlocked',
         updated.where((c) => c.isUnlocked).length,
@@ -541,8 +553,5 @@ class AvatarsNotifier extends StateNotifier<AvatarsState> {
 /// Riverpod provider for avatars
 final avatarsProvider =
     StateNotifierProvider<AvatarsNotifier, AvatarsState>(
-  (ref) async {
-    final prefs = await SharedPreferences.getInstance();
-    return AvatarsNotifier(prefs);
-  },
+  (ref) => AvatarsNotifier(),
 );

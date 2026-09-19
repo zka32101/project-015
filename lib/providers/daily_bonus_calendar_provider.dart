@@ -113,27 +113,35 @@ class DailyBonusCalendarState {
 /// Notifier for daily bonus calendar
 class DailyBonusCalendarNotifier
     extends StateNotifier<DailyBonusCalendarState> {
-  final SharedPreferences prefs;
+  SharedPreferences? _prefs;
 
-  DailyBonusCalendarNotifier(this.prefs)
-      : super(_buildInitialState(prefs)) {
+  DailyBonusCalendarNotifier()
+      : super(_buildInitialState()) {
     _initializeCalendar();
   }
 
   /// Initialize calendar
-  void _initializeCalendar() {
-    _generateCalendarMonths();
-  }
+  Future<void> _initializeCalendar() async {
+    final prefs = await SharedPreferences.getInstance();
+    _prefs = prefs;
 
-  /// Build initial state
-  static DailyBonusCalendarState _buildInitialState(
-    SharedPreferences prefs,
-  ) {
     final claimedDatesStr = prefs.getStringList('claimed_bonus_dates') ?? [];
     final claimedDates = claimedDatesStr
         .map((dateStr) => DateTime.parse(dateStr))
         .toList();
 
+    state = state.copyWith(
+      claimedDates: claimedDates,
+      totalBonusEarned: prefs.getInt('total_bonus_earned') ?? 0,
+      currentStreak: prefs.getInt('bonus_current_streak') ?? 0,
+      bestStreak: prefs.getInt('bonus_best_streak') ?? 0,
+    );
+
+    _generateCalendarMonths();
+  }
+
+  /// Build initial state
+  static DailyBonusCalendarState _buildInitialState() {
     return DailyBonusCalendarState(
       currentMonth: CalendarMonth(
         month: DateTime.now().month,
@@ -143,10 +151,10 @@ class DailyBonusCalendarNotifier
         claimedRewards: 0,
         totalRewardsPossible: 0,
       ),
-      claimedDates: claimedDates,
-      totalBonusEarned: prefs.getInt('total_bonus_earned') ?? 0,
-      currentStreak: prefs.getInt('bonus_current_streak') ?? 0,
-      bestStreak: prefs.getInt('bonus_best_streak') ?? 0,
+      claimedDates: const [],
+      totalBonusEarned: 0,
+      currentStreak: 0,
+      bestStreak: 0,
     );
   }
 
@@ -267,6 +275,8 @@ class DailyBonusCalendarNotifier
     }
 
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
+
       // Add to claimed dates
       final claimedDates = [...state.claimedDates, bonus.date];
       await prefs.setStringList(
@@ -320,10 +330,7 @@ class DailyBonusCalendarNotifier
 /// Riverpod provider for daily bonus calendar
 final dailyBonusCalendarProvider =
     StateNotifierProvider<DailyBonusCalendarNotifier, DailyBonusCalendarState>(
-  (ref) async {
-    final prefs = await SharedPreferences.getInstance();
-    return DailyBonusCalendarNotifier(prefs);
-  },
+  (ref) => DailyBonusCalendarNotifier(),
 );
 
 /// Alternative sync provider (for testing)

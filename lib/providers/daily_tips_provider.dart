@@ -126,14 +126,13 @@ class DailyTipsState {
 
 /// Notifier for daily tips
 class DailyTipsNotifier extends StateNotifier<DailyTipsState> {
-  final SharedPreferences prefs;
+  SharedPreferences? _prefs;
 
-  DailyTipsNotifier(this.prefs)
-      : super(_buildInitialState(prefs)) {
+  DailyTipsNotifier() : super(_buildInitialState()) {
     _initializeTips();
   }
 
-  static DailyTipsState _buildInitialState(SharedPreferences prefs) {
+  static DailyTipsState _buildInitialState() {
     return DailyTipsState(
       allTips: [],
       favoriteTips: [],
@@ -143,10 +142,13 @@ class DailyTipsNotifier extends StateNotifier<DailyTipsState> {
     );
   }
 
-  void _initializeTips() {
+  Future<void> _initializeTips() async {
+    final prefs = await SharedPreferences.getInstance();
+    _prefs = prefs;
+
     _generateAllTips();
-    _selectTodaysTip();
-    _loadFavorites();
+    _selectTodaysTip(prefs);
+    _loadFavorites(prefs);
   }
 
   void _generateAllTips() {
@@ -330,7 +332,7 @@ class DailyTipsNotifier extends StateNotifier<DailyTipsState> {
     );
   }
 
-  void _selectTodaysTip() {
+  void _selectTodaysTip(SharedPreferences prefs) {
     if (state.allTips.isEmpty) return;
 
     final lastUpdateStr = prefs.getString('last_tip_date');
@@ -364,7 +366,7 @@ class DailyTipsNotifier extends StateNotifier<DailyTipsState> {
     );
   }
 
-  void _loadFavorites() {
+  void _loadFavorites(SharedPreferences prefs) {
     final favoriteIds = prefs.getStringList('favorite_tip_ids') ?? [];
     final favorites = state.allTips
         .where((tip) => favoriteIds.contains(tip.id))
@@ -376,6 +378,7 @@ class DailyTipsNotifier extends StateNotifier<DailyTipsState> {
 
   Future<void> toggleFavorite(GameTip tip) async {
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       final isFavorite = !tip.isFavorite;
       final favoriteIds = prefs.getStringList('favorite_tip_ids') ?? [];
 
@@ -408,6 +411,7 @@ class DailyTipsNotifier extends StateNotifier<DailyTipsState> {
 
   Future<void> markAsViewed(GameTip tip) async {
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       final recentIds = prefs.getStringList('recently_viewed_tip_ids') ?? [];
 
       recentIds.remove(tip.id);
@@ -458,8 +462,5 @@ class DailyTipsNotifier extends StateNotifier<DailyTipsState> {
 /// Riverpod provider for daily tips
 final dailyTipsProvider =
     StateNotifierProvider<DailyTipsNotifier, DailyTipsState>(
-  (ref) async {
-    final prefs = await SharedPreferences.getInstance();
-    return DailyTipsNotifier(prefs);
-  },
+  (ref) => DailyTipsNotifier(),
 );

@@ -175,26 +175,30 @@ class TournamentsState {
 
 /// Notifier for tournaments
 class TournamentsNotifier extends StateNotifier<TournamentsState> {
-  final SharedPreferences prefs;
+  SharedPreferences? _prefs;
 
-  TournamentsNotifier(this.prefs)
-      : super(_buildInitialState(prefs)) {
+  TournamentsNotifier()
+      : super(_buildInitialState()) {
     _initializeTournaments();
   }
 
   /// Initialize tournaments
-  void _initializeTournaments() {
+  Future<void> _initializeTournaments() async {
+    final prefs = await SharedPreferences.getInstance();
+    _prefs = prefs;
+    final participationIds =
+        prefs.getStringList('tournament_participations') ?? [];
+    state = state.copyWith(totalParticipations: participationIds.length);
     _generateTournaments();
   }
 
   /// Build initial state
-  static TournamentsState _buildInitialState(SharedPreferences prefs) {
-    final participationIds = prefs.getStringList('tournament_participations') ?? [];
-    return TournamentsState(
+  static TournamentsState _buildInitialState() {
+    return const TournamentsState(
       activeTournaments: [],
       upcomingTournaments: [],
       pastTournaments: [],
-      totalParticipations: participationIds.length,
+      totalParticipations: 0,
     );
   }
 
@@ -379,6 +383,7 @@ class TournamentsNotifier extends StateNotifier<TournamentsState> {
   /// Participate in a tournament
   Future<void> participateTournament(String tournamentId) async {
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       final participations = prefs.getStringList('tournament_participations') ?? [];
       if (!participations.contains(tournamentId)) {
         participations.add(tournamentId);
@@ -398,6 +403,7 @@ class TournamentsNotifier extends StateNotifier<TournamentsState> {
   /// Withdraw from tournament
   Future<void> withdrawTournament(String tournamentId) async {
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       final participations = prefs.getStringList('tournament_participations') ?? [];
       participations.remove(tournamentId);
       await prefs.setStringList('tournament_participations', participations);
@@ -415,10 +421,7 @@ class TournamentsNotifier extends StateNotifier<TournamentsState> {
 
 /// Riverpod provider for tournaments
 final tournamentsProvider = StateNotifierProvider<TournamentsNotifier, TournamentsState>(
-  (ref) async {
-    final prefs = await SharedPreferences.getInstance();
-    return TournamentsNotifier(prefs);
-  },
+  (ref) => TournamentsNotifier(),
 );
 
 /// Alternative sync provider (for testing)

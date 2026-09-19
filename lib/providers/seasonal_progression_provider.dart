@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'game_analytics_provider.dart';
-import 'player_profile_provider.dart';
+import 'player_profile_provider.dart' hide gameAnalyticsProvider;
 
 /// Seasonal tier level
 enum SeasonalTier {
@@ -146,7 +146,8 @@ class PlayerSeasonalData {
 
     final progress =
         ((currentRating - previousRating) / (nextTierRating - previousRating))
-            .clamp(0, 1);
+            .clamp(0, 1)
+            .toDouble();
     return progress;
   }
 
@@ -491,7 +492,7 @@ final seasonalProgressionProvider = StateNotifierProvider<
     SeasonalProgressionNotifier,
     SeasonalProgressionState>((ref) {
   final analytics = ref.watch(gameAnalyticsProvider);
-  final playerProfile = ref.watch(playerProfileProvider);
+  final playerProfile = ref.watch(playerProfileProvider).profile;
 
   return SeasonalProgressionNotifier(analytics, playerProfile);
 });
