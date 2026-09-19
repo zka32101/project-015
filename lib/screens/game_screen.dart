@@ -30,6 +30,7 @@ import 'game_analytics_dashboard_screen.dart';
 import 'multiplayer_lobby_screen.dart';
 import 'player_search_screen.dart';
 import 'replay_sharing_screen.dart';
+import 'event_system_screen.dart';
 import 'game_modes_screen.dart';
 import 'game_records_browser.dart';
 import 'leaderboard_screen.dart';
@@ -389,6 +390,18 @@ class GameScreen extends ConsumerWidget {
                 MaterialPageRoute(
                     builder: (_) =>
                         const DailyChallengesScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('event_system_button'),
+            icon: const Icon(Icons.event),
+            tooltip: 'イベント',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const EventSystemScreen()),
               );
             },
           ),
