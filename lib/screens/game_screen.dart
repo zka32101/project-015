@@ -27,6 +27,7 @@ import 'difficulty_progression_screen.dart';
 import 'enhanced_achievements_screen.dart';
 import 'friends_screen.dart';
 import 'game_analytics_dashboard_screen.dart';
+import 'player_search_screen.dart';
 import 'game_modes_screen.dart';
 import 'game_records_browser.dart';
 import 'leaderboard_screen.dart';
@@ -284,6 +285,16 @@ class GameScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const FriendsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('player_search_button'),
+            icon: const Icon(Icons.person_search),
+            tooltip: 'プレイヤー検索',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PlayerSearchScreen()),
               );
             },
           ),
