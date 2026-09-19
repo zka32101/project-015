@@ -31,6 +31,7 @@ import 'multiplayer_lobby_screen.dart';
 import 'player_search_screen.dart';
 import 'replay_sharing_screen.dart';
 import 'event_system_screen.dart';
+import 'customization_screen.dart';
 import 'game_modes_screen.dart';
 import 'game_records_browser.dart';
 import 'leaderboard_screen.dart';
@@ -458,6 +459,16 @@ class GameScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const AvatarsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('customization_button'),
+            icon: const Icon(Icons.palette),
+            tooltip: 'カスタマイズ',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CustomizationScreen()),
               );
             },
           ),
