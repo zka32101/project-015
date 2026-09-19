@@ -27,6 +27,12 @@ import 'difficulty_progression_screen.dart';
 import 'enhanced_achievements_screen.dart';
 import 'friends_screen.dart';
 import 'game_analytics_dashboard_screen.dart';
+import 'multiplayer_lobby_screen.dart';
+import 'player_search_screen.dart';
+import 'replay_sharing_screen.dart';
+import 'event_system_screen.dart';
+import 'customization_screen.dart';
+import 'performance_optimization_screen.dart';
 import 'game_modes_screen.dart';
 import 'game_records_browser.dart';
 import 'leaderboard_screen.dart';
@@ -268,6 +274,16 @@ class GameScreen extends ConsumerWidget {
             },
           ),
           IconButton(
+            key: const Key('replay_sharing_button'),
+            icon: const Icon(Icons.share),
+            tooltip: 'リプレイ共有',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ReplaySharingScreen()),
+              );
+            },
+          ),
+          IconButton(
             key: const Key('profile_button'),
             icon: const Icon(Icons.person),
             tooltip: 'プロフィール',
@@ -284,6 +300,26 @@ class GameScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const FriendsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('player_search_button'),
+            icon: const Icon(Icons.person_search),
+            tooltip: 'プレイヤー検索',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PlayerSearchScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('multiplayer_button'),
+            icon: const Icon(Icons.wifi),
+            tooltip: 'マルチプレイ',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const MultiplayerLobbyScreen()),
               );
             },
           ),
@@ -360,6 +396,18 @@ class GameScreen extends ConsumerWidget {
             },
           ),
           IconButton(
+            key: const Key('event_system_button'),
+            icon: const Icon(Icons.event),
+            tooltip: 'イベント',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const EventSystemScreen()),
+              );
+            },
+          ),
+          IconButton(
             key: const Key('daily_tips_button'),
             icon: const Icon(Icons.lightbulb),
             tooltip: 'デイリーティップス',
@@ -416,12 +464,32 @@ class GameScreen extends ConsumerWidget {
             },
           ),
           IconButton(
+            key: const Key('customization_button'),
+            icon: const Icon(Icons.palette),
+            tooltip: 'カスタマイズ',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CustomizationScreen()),
+              );
+            },
+          ),
+          IconButton(
             key: const Key('settings_button'),
             icon: const Icon(Icons.settings),
             tooltip: '設定',
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('performance_button'),
+            icon: const Icon(Icons.speed),
+            tooltip: 'パフォーマンス',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PerformanceOptimizationScreen()),
               );
             },
           ),
