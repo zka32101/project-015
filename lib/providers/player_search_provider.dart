@@ -54,18 +54,23 @@ class PlayerSearchState {
     String? query,
     List<SearchablePlayer>? results,
     bool? isLoading,
-    String? error,
+    Object? error = _unset,
     List<SearchablePlayer>? recentlyViewed,
   }) {
     return PlayerSearchState(
       query: query ?? this.query,
       results: results ?? this.results,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: identical(error, _unset) ? this.error : error as String?,
       recentlyViewed: recentlyViewed ?? this.recentlyViewed,
     );
   }
 }
+
+/// Sentinel used by [PlayerSearchState.copyWith] to distinguish "field not
+/// passed" (keep current value) from "field explicitly passed as null"
+/// (clear the value).
+const Object _unset = Object();
 
 /// Notifier for player search
 class PlayerSearchNotifier extends StateNotifier<PlayerSearchState> {

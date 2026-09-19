@@ -112,17 +112,22 @@ class ReplaySharingState {
     List<SharedReplay>? mySharedReplays,
     List<SharedReplay>? favorites,
     bool? isLoading,
-    String? error,
+    Object? error = _unset,
   }) {
     return ReplaySharingState(
       sharedReplays: sharedReplays ?? this.sharedReplays,
       mySharedReplays: mySharedReplays ?? this.mySharedReplays,
       favorites: favorites ?? this.favorites,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: identical(error, _unset) ? this.error : error as String?,
     );
   }
 }
+
+/// Sentinel used by [ReplaySharingState.copyWith] to distinguish "field not
+/// passed" (keep current value) from "field explicitly passed as null"
+/// (clear the value).
+const Object _unset = Object();
 
 /// Notifier for replay sharing and social features
 class ReplaySharingNotifier extends StateNotifier<ReplaySharingState> {
