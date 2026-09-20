@@ -280,8 +280,8 @@ class GameSession {
 
   /// Average moves per minute
   double get movesPerMinute {
-    if (duration.inMinutes == 0) return 0.0;
-    return movesCount / duration.inMinutes;
+    if (duration.inSeconds == 0) return 0.0;
+    return movesCount / (duration.inSeconds / 60.0);
   }
 
   /// Format session date

@@ -37,6 +37,27 @@ class GameState {
     _positionCounts[key] = (_positionCounts[key] ?? 0) + 1;
   }
 
+  /// Resets this GameState to the initial position and replays [moves] in
+  /// order, exactly as if they had just been applied to a fresh game.
+  ///
+  /// Used by GameUndoRedoManager: undoing must "forget" every position the
+  /// game passed through, not just roll board/turn/plyCount back, or
+  /// [_positionCounts] keeps counting positions from a line that's no
+  /// longer live and can trigger a false repetition loss after only a
+  /// couple of undo/redo cycles.
+  void resetAndReplay(List<Move> moves) {
+    board = Board.initial();
+    turn = Owner.playerA;
+    plyCount = 0;
+    result = GameResult.ongoing;
+    moveHistory.clear();
+    _positionCounts.clear();
+    _recordPosition();
+    for (final move in moves) {
+      applyMove(move);
+    }
+  }
+
   /// Applies [move] for the current side to move. Caller must ensure the move
   /// is legal (see MoveGenerator.legalMovesFor).
   void applyMove(Move move) {

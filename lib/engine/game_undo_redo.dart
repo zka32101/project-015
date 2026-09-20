@@ -94,30 +94,12 @@ class GameUndoRedoManager {
     _undoneHistory.clear();
   }
 
-  /// Reconstruct the game state by replaying moves from the beginning
+  /// Reconstruct the game state by replaying moves from the beginning.
+  /// Delegates to GameState.resetAndReplay so the private position-count
+  /// map used for repetition detection is cleared and rebuilt from scratch
+  /// too, not just board/turn/plyCount/result.
   void _reconstructGameState() {
-    // Create a fresh GameState and replay only the moves that should be active
-    final freshState = GameState.initial();
-
-    // Transfer the fresh state to the current gameState object
-    gameState.board = freshState.board;
-    gameState.turn = freshState.turn;
-    gameState.plyCount = freshState.plyCount;
-    gameState.result = freshState.result;
-
-    // Rebuild position counts by replaying moves
     final savedHistory = List<Move>.from(gameState.moveHistory);
-    gameState.moveHistory.clear();
-
-    // Re-apply each move to update the state correctly
-    for (final move in savedHistory) {
-      try {
-        gameState.applyMove(move);
-      } catch (e) {
-        // If move application fails, restore and break
-        gameState.moveHistory.removeAt(gameState.moveHistory.length - 1);
-        break;
-      }
-    }
+    gameState.resetAndReplay(savedHistory);
   }
 }
