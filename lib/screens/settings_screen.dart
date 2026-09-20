@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../engine/board_theme.dart';
 import '../engine/preferences.dart';
 import '../engine/sound_manager.dart';
 

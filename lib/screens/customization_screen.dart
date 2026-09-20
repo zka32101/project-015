@@ -177,8 +177,6 @@ class _ThemesTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-
     return ListView.builder(
       itemCount: customizationState.themePresets.length,
       itemBuilder: (context, index) {

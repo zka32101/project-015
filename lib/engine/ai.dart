@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'ai_evaluator.dart';
@@ -21,29 +20,42 @@ class ReversiaAi {
   final Random random;
   static const int _hardSearchDepth = 4;
   static const int _endgameSearchDepth = 8;  // Deeper search in endgame
-  static const int _endgamePieceThreshold = 20;  // Activate endgame when ≤20 total pieces
+  // Reversia starts with 18 total pieces (9 per side) and pieces are only
+  // ever removed (captures convert-in-place or remove a king), never added,
+  // so this threshold must be well below 18 or every game would spend its
+  // entire duration in "endgame" mode.
+  static const int _endgamePieceThreshold = 10;  // Activate endgame when ≤10 total pieces
 
   ReversiaAi(this.difficulty, [Random? random]) : random = random ?? Random();
 
-  Move? pickMove(Board board, Owner owner) {
+  /// [moveNumber] is the 1-based number of the move about to be played
+  /// (e.g. GameState.moveHistory.length + 1). It drives opening-book
+  /// lookups; callers that can't supply it (tests, standalone tools) fall
+  /// back to a conservative estimate that never matches the book, since
+  /// piece count alone can't reliably be mapped back to a move number in
+  /// this game (see _getMoveNumber).
+  Move? pickMove(Board board, Owner owner, {int? moveNumber}) {
     final moves = MoveGenerator.legalMovesFor(board, owner);
     if (moves.isEmpty) return null;
+    final effectiveMoveNumber = moveNumber ?? _getMoveNumber(board);
 
     switch (difficulty) {
       case AiDifficulty.easy:
-        return _pickEasy(board, owner, moves);
+        return _pickEasy(board, owner, moves, effectiveMoveNumber);
       case AiDifficulty.medium:
-        return _pickGreedy(board, owner, moves);
+        return _pickGreedy(board, owner, moves, effectiveMoveNumber);
       case AiDifficulty.hard:
-        return _pickMinimax(board, owner, moves);
+        return _pickMinimax(board, owner, moves, effectiveMoveNumber);
     }
   }
 
   /// Picks a move and returns detailed thinking information including
   /// evaluation score and search depth. Useful for displaying AI thinking.
-  AiMoveResult pickMoveWithThinking(Board board, Owner owner) {
+  /// See [pickMove] for the meaning of [moveNumber].
+  AiMoveResult pickMoveWithThinking(Board board, Owner owner, {int? moveNumber}) {
     final startTime = DateTime.now();
     final moves = MoveGenerator.legalMovesFor(board, owner);
+    final effectiveMoveNumber = moveNumber ?? _getMoveNumber(board);
 
     if (moves.isEmpty) {
       final thinkingTime = DateTime.now().difference(startTime);
@@ -57,11 +69,9 @@ class ReversiaAi {
 
     switch (difficulty) {
       case AiDifficulty.easy:
-        final move = _pickEasy(board, owner, moves);
+        final move = _pickEasy(board, owner, moves, effectiveMoveNumber);
         final thinkingTime = DateTime.now().difference(startTime);
-        final score = move != null
-            ? AiStrategy.evaluateMoveEasy(board, move, owner)
-            : null;
+        final score = AiStrategy.evaluateMoveEasy(board, move, owner);
         return AiMoveResult(
           move: move,
           evaluationScore: score,
@@ -70,11 +80,9 @@ class ReversiaAi {
         );
 
       case AiDifficulty.medium:
-        final move = _pickGreedy(board, owner, moves);
+        final move = _pickGreedy(board, owner, moves, effectiveMoveNumber);
         final thinkingTime = DateTime.now().difference(startTime);
-        final score = move != null
-            ? AiStrategy.evaluateMoveMedium(board, move, owner)
-            : null;
+        final score = AiStrategy.evaluateMoveMedium(board, move, owner);
         return AiMoveResult(
           move: move,
           evaluationScore: score,
@@ -83,7 +91,7 @@ class ReversiaAi {
         );
 
       case AiDifficulty.hard:
-        final result = _pickMinimaxWithThinking(board, owner, moves);
+        final result = _pickMinimaxWithThinking(board, owner, moves, effectiveMoveNumber);
         final thinkingTime = DateTime.now().difference(startTime);
         return AiMoveResult(
           move: result['move'] as Move?,
@@ -94,9 +102,8 @@ class ReversiaAi {
     }
   }
 
-  Move _pickEasy(Board board, Owner owner, List<Move> moves) {
+  Move _pickEasy(Board board, Owner owner, List<Move> moves, int moveNumber) {
     // In opening, give 50% chance to use opening book (helps easy AI learn openings)
-    final moveNumber = _getMoveNumber(board);
     if (OpeningBook.isInOpeningBook(moveNumber) && random.nextDouble() < 0.5) {
       final bookMove = _selectOpeningMove(moves, moveNumber);
       if (bookMove != null) {
@@ -124,9 +131,8 @@ class ReversiaAi {
     return bestMove ?? moves[random.nextInt(moves.length)];
   }
 
-  Move _pickGreedy(Board board, Owner owner, List<Move> moves) {
+  Move _pickGreedy(Board board, Owner owner, List<Move> moves, int moveNumber) {
     // Check opening book for early game moves (medium AI always prefers book moves)
-    final moveNumber = _getMoveNumber(board);
     if (OpeningBook.isInOpeningBook(moveNumber)) {
       final bookMove = _selectOpeningMove(moves, moveNumber);
       if (bookMove != null) {
@@ -149,9 +155,8 @@ class ReversiaAi {
     return bestMove ?? moves[random.nextInt(moves.length)];
   }
 
-  Move _pickMinimax(Board board, Owner owner, List<Move> moves) {
+  Move _pickMinimax(Board board, Owner owner, List<Move> moves, int moveNumber) {
     // Check opening book for early game moves
-    final moveNumber = _getMoveNumber(board);
     if (OpeningBook.isInOpeningBook(moveNumber)) {
       final bookMove = _selectOpeningMove(moves, moveNumber);
       if (bookMove != null) {
@@ -186,7 +191,7 @@ class ReversiaAi {
   int _getSearchDepth(Board board) {
     final totalPieces = board.pieceCount(Owner.playerA) + board.pieceCount(Owner.playerB);
 
-    // Endgame: when 20 or fewer pieces remain, search deeper for optimal play
+    // Endgame: when _endgamePieceThreshold or fewer pieces remain, search deeper for optimal play
     if (totalPieces <= _endgamePieceThreshold) {
       return _endgameSearchDepth;
     }
@@ -195,15 +200,17 @@ class ReversiaAi {
     return _hardSearchDepth;
   }
 
-  /// Calculate the move number in the game (1-based, counting full moves).
-  /// Estimates move number from total piece count on the board.
-  int _getMoveNumber(Board board) {
-    final totalPieces = board.pieceCount(Owner.playerA) + board.pieceCount(Owner.playerB);
-    // In 6x6 Reversia: start with 4 pieces (2 per player)
-    // Rough estimate: each move adds ~1 net piece on average
-    // moveNumber ≈ (totalPieces - 4) / 2 + 1, but we use totalPieces/2 as estimate
-    return (totalPieces / 2).ceil();
-  }
+  /// Fallback move-number estimate for callers that can't supply the real
+  /// one via [pickMove]'s `moveNumber` parameter (tests, HintEngine).
+  ///
+  /// Unlike Othello, this game starts with 18 pieces on the board and
+  /// pieces are only ever removed (a capture converts a piece in place or,
+  /// for a king, removes it outright) -- moving to an empty square doesn't
+  /// change the count at all. Piece count therefore has no reliable
+  /// relationship to how many moves have been played, so guessing a small
+  /// number here would risk selecting nonsensical "opening" moves deep into
+  /// a game. Return a number outside the opening book's range instead.
+  int _getMoveNumber(Board board) => 999;
 
   /// Select a move from the opening book if available.
   /// Prefers highest-strength moves but picks randomly among strong options.
@@ -233,9 +240,9 @@ class ReversiaAi {
   }
 
   /// Minimax with thinking that returns both move and evaluation score.
-  Map<String, Object?> _pickMinimaxWithThinking(Board board, Owner owner, List<Move> moves) {
+  Map<String, Object?> _pickMinimaxWithThinking(
+      Board board, Owner owner, List<Move> moves, int moveNumber) {
     // Check opening book for early game moves
-    final moveNumber = _getMoveNumber(board);
     if (OpeningBook.isInOpeningBook(moveNumber)) {
       final bookMove = _selectOpeningMove(moves, moveNumber);
       if (bookMove != null) {

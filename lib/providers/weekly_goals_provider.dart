@@ -400,7 +400,7 @@ final weeklyGoalsProvider =
       SharedPreferences.getInstance() as SharedPreferences,
       analytics,
     ),
-  ) as WeeklyGoalsNotifier;
+  );
 });
 
 // Import needed from game_records_provider

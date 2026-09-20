@@ -19,7 +19,7 @@ class PlayerTimer {
   bool _isRunning = false;
 
   /// Callback when time runs out
-  VoidCallback? onTimeOut;
+  void Function()? onTimeOut;
 
   /// Callback for time updates
   void Function(int remainingMs)? onTimeUpdate;

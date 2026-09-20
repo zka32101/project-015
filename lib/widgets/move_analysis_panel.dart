@@ -169,7 +169,7 @@ class MoveStrengthBadge extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final gameState = ref.watch(gameViewModelProvider);
+    ref.watch(gameViewModelProvider);
     final viewModel = ref.read(gameViewModelProvider.notifier);
 
     final analysis = viewModel.analyzeMoveSpecific(move);

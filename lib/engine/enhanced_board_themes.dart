@@ -5,6 +5,7 @@ import 'board_theme.dart';
 class EnhancedBoardThemes {
   // Moonlight theme - cool blues and silvers
   static final moonlight = BoardTheme(
+    id: 'moonlight',
     label: '月光',
     woodDark: const Color(0xFF1a2332),
     woodLight: const Color(0xFF2d3e50),
@@ -17,6 +18,7 @@ class EnhancedBoardThemes {
 
   // Sunset theme - warm oranges and reds
   static final sunset = BoardTheme(
+    id: 'sunset',
     label: '夕焼け',
     woodDark: const Color(0xFF3d2a1f),
     woodLight: const Color(0xFF5c4033),
@@ -29,6 +31,7 @@ class EnhancedBoardThemes {
 
   // Forest theme - deep greens
   static final forest = BoardTheme(
+    id: 'forest',
     label: '深緑',
     woodDark: const Color(0xFF1b3d2f),
     woodLight: const Color(0xFF2d5a47),
@@ -41,6 +44,7 @@ class EnhancedBoardThemes {
 
   // Midnight theme - dark purples and blues
   static final midnight = BoardTheme(
+    id: 'midnight',
     label: '深夜',
     woodDark: const Color(0xFF1a0f2e),
     woodLight: const Color(0xFF2d1b4e),
@@ -53,6 +57,7 @@ class EnhancedBoardThemes {
 
   // Cherry blossom theme - soft pinks and whites
   static final cherryBlossom = BoardTheme(
+    id: 'cherry_blossom',
     label: '桜',
     woodDark: const Color(0xFF3d2a2f),
     woodLight: const Color(0xFF5c4047),
@@ -65,6 +70,7 @@ class EnhancedBoardThemes {
 
   // Ocean theme - deep blues and teals
   static final ocean = BoardTheme(
+    id: 'ocean',
     label: '大洋',
     woodDark: const Color(0xFF0d3b66),
     woodLight: const Color(0xFF1b5a96),
@@ -77,6 +83,7 @@ class EnhancedBoardThemes {
 
   // Autumn theme - warm browns and reds
   static final autumn = BoardTheme(
+    id: 'autumn',
     label: '秋',
     woodDark: const Color(0xFF4a2c2a),
     woodLight: const Color(0xFF6b4423),
@@ -89,6 +96,7 @@ class EnhancedBoardThemes {
 
   // Spring theme - soft greens and pinks
   static final spring = BoardTheme(
+    id: 'spring',
     label: '春',
     woodDark: const Color(0xFF3a4a3f),
     woodLight: const Color(0xFF5a6d61),
@@ -101,6 +109,7 @@ class EnhancedBoardThemes {
 
   // Modern theme - sleek grays and blues
   static final modern = BoardTheme(
+    id: 'modern',
     label: 'モダン',
     woodDark: const Color(0xFF2a3a47),
     woodLight: const Color(0xFF3d4f66),
@@ -113,6 +122,7 @@ class EnhancedBoardThemes {
 
   // Retro theme - vintage colors
   static final retro = BoardTheme(
+    id: 'retro',
     label: 'レトロ',
     woodDark: const Color(0xFF5c6e59),
     woodLight: const Color(0xFF7a8d73),
@@ -126,6 +136,7 @@ class EnhancedBoardThemes {
   static List<BoardTheme> getAll() => [
     // Original theme
     const BoardTheme(
+      id: 'standard',
       label: '標準',
       woodDark: Color(0xFF3e2723),
       woodLight: Color(0xFF5d4037),
@@ -153,6 +164,7 @@ class EnhancedBoardThemes {
 class HighContrastBoardTheme extends BoardTheme {
   HighContrastBoardTheme()
       : super(
+          id: 'high_contrast',
           label: 'ハイコントラスト',
           woodDark: const Color(0xFF000000),
           woodLight: const Color(0xFF333333),
@@ -184,6 +196,7 @@ class ThemeTransition {
   /// Get interpolated theme at current progress
   BoardTheme getInterpolated() {
     return BoardTheme(
+      id: to.id,
       label: from.label,
       woodDark: _interpolateColor(from.woodDark, to.woodDark, progress),
       woodLight: _interpolateColor(from.woodLight, to.woodLight, progress),

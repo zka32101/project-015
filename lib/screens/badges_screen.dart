@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Badge;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/badges_provider.dart';
@@ -8,14 +8,11 @@ class BadgesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final badgesAsync = ref.watch(badgesProvider);
+    final badgesState = ref.watch(badgesProvider);
     final theme = Theme.of(context);
+    final completionPercent = badgesState.getCompletionPercentage();
 
-    return badgesAsync.when(
-      data: (badgesState) {
-        final completionPercent = badgesState.getCompletionPercentage();
-
-        return Scaffold(
+    return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
           appBar: AppBar(
             title: const Text('バッジコレクション'),
@@ -123,16 +120,6 @@ class BadgesScreen extends ConsumerWidget {
               const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
             ],
           ),
-        );
-      },
-      loading: () => Scaffold(
-        appBar: AppBar(title: const Text('バッジコレクション')),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, stack) => Scaffold(
-        appBar: AppBar(title: const Text('バッジコレクション')),
-        body: Center(child: Text('エラー: $error')),
-      ),
     );
   }
 }

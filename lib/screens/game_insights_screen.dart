@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../engine/board_theme.dart';
 import '../engine/game_record.dart';
-import '../engine/models.dart';
 import '../engine/statistics.dart';
 
 class GameInsightsScreen extends StatefulWidget {

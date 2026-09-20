@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../engine/game_replay.dart';
-import '../engine/models.dart';
 
 /// Complete replay control interface with timeline and playback
 class ReplayControlsPanel extends StatefulWidget {

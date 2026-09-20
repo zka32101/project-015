@@ -406,8 +406,6 @@ class _PhaseAnalysisCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return GridView.count(
       crossAxisCount: 3,
       shrinkWrap: true,

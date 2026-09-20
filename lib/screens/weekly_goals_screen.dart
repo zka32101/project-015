@@ -129,7 +129,7 @@ class _PointsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final progressToNextMilestone = (pointsEarned / nextMilestone).clamp(0, 1);
+    final progressToNextMilestone = (pointsEarned / nextMilestone).clamp(0, 1).toDouble();
 
     return Container(
       margin: const EdgeInsets.all(16),

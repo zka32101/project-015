@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/game_record.dart';
+import '../engine/models.dart';
 import 'game_records_provider.dart';
 
 /// Analytics for a specific difficulty level

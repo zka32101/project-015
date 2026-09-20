@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -141,7 +140,6 @@ class EventSystemNotifier extends StateNotifier<EventSystemState> {
   static final List<LimitedEvent> _sampleActiveEvents = [];
   static final List<LimitedEvent> _sampleUpcomingEvents = [];
   static final List<EventReward> _sampleRewards = [];
-  final math.Random _random = math.Random();
 
   EventSystemNotifier()
       : super(const EventSystemState(

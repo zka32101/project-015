@@ -8,14 +8,11 @@ class DailyChallengesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final challengesAsync = ref.watch(dailyChallengesProvider);
+    final challengesState = ref.watch(dailyChallengesProvider);
     final theme = Theme.of(context);
+    final completion = challengesState.getCompletionPercentage();
 
-    return challengesAsync.when(
-      data: (challengesState) {
-        final completion = challengesState.getCompletionPercentage();
-
-        return Scaffold(
+    return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
           appBar: AppBar(
             title: const Text('デイリーチャレンジ'),
@@ -74,16 +71,6 @@ class DailyChallengesScreen extends ConsumerWidget {
             ],
           ),
         );
-      },
-      loading: () => Scaffold(
-        appBar: AppBar(title: const Text('デイリーチャレンジ')),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, stack) => Scaffold(
-        appBar: AppBar(title: const Text('デイリーチャレンジ')),
-        body: Center(child: Text('エラー: $error')),
-      ),
-    );
   }
 }
 

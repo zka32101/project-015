@@ -8,14 +8,11 @@ class SoundSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final soundSettingsAsync = ref.watch(soundSettingsProvider);
+    final soundState = ref.watch(soundSettingsProvider);
     final theme = Theme.of(context);
+    final settings = soundState.audioSettings;
 
-    return soundSettingsAsync.when(
-      data: (soundState) {
-        final settings = soundState.audioSettings;
-
-        return Scaffold(
+    return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
           appBar: AppBar(
             title: const Text('音声設定'),
@@ -208,16 +205,6 @@ class SoundSettingsScreen extends ConsumerWidget {
             ),
           ),
         );
-      },
-      loading: () => Scaffold(
-        appBar: AppBar(title: const Text('音声設定')),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, stack) => Scaffold(
-        appBar: AppBar(title: const Text('音声設定')),
-        body: Center(child: Text('エラー: $error')),
-      ),
-    );
   }
 
   List<Widget> _buildSoundEffectToggles(

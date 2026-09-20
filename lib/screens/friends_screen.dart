@@ -8,12 +8,10 @@ class FriendsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final friendsAsync = ref.watch(friendsProvider);
+    final friendsState = ref.watch(friendsProvider);
     final theme = Theme.of(context);
 
-    return friendsAsync.when(
-      data: (friendsState) {
-        return DefaultTabController(
+    return DefaultTabController(
           length: 4,
           child: Scaffold(
             backgroundColor: theme.scaffoldBackgroundColor,
@@ -62,16 +60,6 @@ class FriendsScreen extends ConsumerWidget {
               ],
             ),
           ),
-        );
-      },
-      loading: () => Scaffold(
-        appBar: AppBar(title: const Text('フレンド')),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, stack) => Scaffold(
-        appBar: AppBar(title: const Text('フレンド')),
-        body: Center(child: Text('エラー: $error')),
-      ),
     );
   }
 

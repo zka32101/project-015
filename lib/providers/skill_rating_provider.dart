@@ -170,32 +170,46 @@ class SkillRatingState {
 
 /// Notifier for skill rating
 class SkillRatingNotifier extends StateNotifier<SkillRatingState> {
-  final SharedPreferences prefs;
+  SharedPreferences? _prefs;
 
-  SkillRatingNotifier(this.prefs)
-      : super(_buildInitialState(prefs)) {
+  SkillRatingNotifier() : super(_buildInitialState()) {
     _initializeRating();
+    _loadPersistedRating();
   }
 
-  static SkillRatingState _buildInitialState(SharedPreferences prefs) {
-    final currentRating = prefs.getInt('current_rating') ?? 1200;
-    final highestRating = prefs.getInt('highest_rating') ?? currentRating;
-    final totalGamesPlayed = prefs.getInt('total_games_played_rating') ?? 0;
-    final totalWins = prefs.getInt('total_wins_rating') ?? 0;
-
-    final winRate = totalGamesPlayed > 0
-        ? (totalWins / totalGamesPlayed)
-        : 0.0;
+  static SkillRatingState _buildInitialState() {
+    const currentRating = 1200;
 
     return SkillRatingState(
+      currentRating: currentRating,
+      currentTier: RatingTier.getTierForRating(currentRating),
+      totalGamesPlayed: 0,
+      totalWins: 0,
+      winRate: 0.0,
+      ratingHistory: [],
+      skillRatings: [],
+      highestRating: currentRating,
+    );
+  }
+
+  Future<void> _loadPersistedRating() async {
+    final prefs = await SharedPreferences.getInstance();
+    _prefs = prefs;
+
+    final currentRating = prefs.getInt('current_rating');
+    if (currentRating == null) return;
+
+    final totalGamesPlayed = prefs.getInt('total_games_played_rating') ?? 0;
+    final totalWins = prefs.getInt('total_wins_rating') ?? 0;
+    final winRate = totalGamesPlayed > 0 ? (totalWins / totalGamesPlayed) : 0.0;
+
+    state = state.copyWith(
       currentRating: currentRating,
       currentTier: RatingTier.getTierForRating(currentRating),
       totalGamesPlayed: totalGamesPlayed,
       totalWins: totalWins,
       winRate: winRate,
-      ratingHistory: [],
-      skillRatings: [],
-      highestRating: highestRating,
+      highestRating: prefs.getInt('highest_rating') ?? currentRating,
     );
   }
 
@@ -256,9 +270,9 @@ class SkillRatingNotifier extends StateNotifier<SkillRatingState> {
         ratingChange: ratingChange,
         isWin: isWin,
         opponentName: isWin
-            ? ['AI (Hard)', 'AI (Normal)', 'Player'].
+            ? ['AI (Hard)', 'AI (Normal)', 'Player']
                 [math.Random().nextInt(3)]
-            : ['AI (Expert)', 'Player'].
+            : ['AI (Expert)', 'Player']
                 [math.Random().nextInt(2)],
         opponentRating: previousRating + math.Random().nextInt(200) - 100,
       ));
@@ -273,6 +287,7 @@ class SkillRatingNotifier extends StateNotifier<SkillRatingState> {
     String? opponentName,
   }) async {
     try {
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       final ratingChange = _calculateRatingChange(
         isWin: isWin,
         currentRating: state.currentRating,
@@ -376,8 +391,5 @@ class SkillRatingNotifier extends StateNotifier<SkillRatingState> {
 /// Riverpod provider for skill rating
 final skillRatingProvider =
     StateNotifierProvider<SkillRatingNotifier, SkillRatingState>(
-  (ref) async {
-    final prefs = await SharedPreferences.getInstance();
-    return SkillRatingNotifier(prefs);
-  },
+  (ref) => SkillRatingNotifier(),
 );

@@ -397,6 +397,47 @@ class _FilterControls extends ConsumerWidget {
   }
 }
 
+/// A small selectable chip used by the result filter row
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final Color? color;
+
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final chipColor = color ?? Theme.of(context).colorScheme.primary;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? chipColor.withValues(alpha: 0.15) : null,
+          border: Border.all(
+            color: selected ? chipColor : Colors.grey.withValues(alpha: 0.5),
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? chipColor : null,
+            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Individual game record tile
 class _GameRecordTile extends StatelessWidget {
   final GameRecord record;

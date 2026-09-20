@@ -22,11 +22,17 @@ class AdvancedEvaluator {
   static int evaluate(Board board, Owner owner) {
     int score = 0;
 
+    // Legal moves for both sides are needed by both king-safety and
+    // mobility below; compute each side's list once and share it rather
+    // than calling MoveGenerator.legalMovesFor 3 separate times.
+    final myMoves = MoveGenerator.legalMovesFor(board, owner);
+    final oppMoves = MoveGenerator.legalMovesFor(board, owner.opponent);
+
     // 1. Material evaluation (piece count)
     score += _evaluateMaterial(board, owner);
 
     // 2. King safety - preserve your king!
-    score += _evaluateKingSafety(board, owner);
+    score += _evaluateKingSafety(board, owner, oppMoves);
 
     // 3. Position control (center advantage)
     score += _evaluatePositionControl(board, owner);
@@ -35,7 +41,7 @@ class AdvancedEvaluator {
     score += _evaluateStrategicPosition(board, owner);
 
     // 5. Piece mobility (more moves = better)
-    score += _evaluateMobility(board, owner);
+    score += _evaluateMobility(myMoves, oppMoves);
 
     return score;
   }
@@ -64,10 +70,8 @@ class AdvancedEvaluator {
   }
 
   /// Evaluate king safety - penalty for king in danger
-  static int _evaluateKingSafety(Board board, Owner owner) {
+  static int _evaluateKingSafety(Board board, Owner owner, List<Move> opponentMoves) {
     // Find opponent's king and assess threat level
-    final opponentMoves = MoveGenerator.legalMovesFor(board, owner.opponent);
-
     int kingThreatCount = 0;
     for (final move in opponentMoves) {
       final target = board.at(move.to);
@@ -153,11 +157,8 @@ class AdvancedEvaluator {
   }
 
   /// Evaluate piece mobility (how many moves available)
-  static int _evaluateMobility(Board board, Owner owner) {
-    final myMoves = MoveGenerator.legalMovesFor(board, owner).length;
-    final oppMoves = MoveGenerator.legalMovesFor(board, owner.opponent).length;
-
-    return (myMoves - oppMoves) * mobilityWeight;
+  static int _evaluateMobility(List<Move> myMoves, List<Move> oppMoves) {
+    return (myMoves.length - oppMoves.length) * mobilityWeight;
   }
 
   /// Evaluate a specific move's value (for greedy strategy)

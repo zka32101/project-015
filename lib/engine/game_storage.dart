@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'game_notation.dart';
-import 'models.dart';
 
 /// Manages game persistence using SharedPreferences
 class GameStorage {

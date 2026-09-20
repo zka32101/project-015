@@ -88,7 +88,7 @@ class MultiplayerLobbyScreen extends ConsumerWidget {
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _showQuickMatchDialog(context, ref),
           label: const Text('クイックマッチ'),
-          icon: const Icon(Icons.lightning_bolt),
+          icon: const Icon(Icons.bolt),
         ),
       ),
     );

@@ -26,6 +26,8 @@ class GameStatistics {
   /// Longest win streak ever for player B
   int playerBLongestStreak = 0;
 
+  GameStatistics();
+
   /// Win rate for player A against each AI difficulty
   final Map<String, GameDifficultyStats> statsByDifficulty = {
     'local': GameDifficultyStats(),
@@ -144,6 +146,8 @@ class GameDifficultyStats {
   int wins = 0;
   int losses = 0;
   int draws = 0;
+
+  GameDifficultyStats();
 
   double get winRate {
     if (totalGames == 0) return double.nan;

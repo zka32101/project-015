@@ -87,7 +87,6 @@ class GameHistorySheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gameState = ref.watch(gameViewModelProvider);
-    final viewModel = ref.read(gameViewModelProvider.notifier);
 
     final moves = gameState.game.moveHistory;
     if (moves.isEmpty) {

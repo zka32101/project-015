@@ -119,23 +119,28 @@ class GameModesState {
 
 /// Notifier for game modes
 class GameModesNotifier extends StateNotifier<GameModesState> {
-  final SharedPreferences prefs;
+  SharedPreferences? _prefs;
 
-  GameModesNotifier(this.prefs)
-      : super(_buildInitialState(prefs)) {
+  GameModesNotifier()
+      : super(_buildInitialState()) {
     _initializeModes();
   }
 
   /// Initialize modes
-  void _initializeModes() {
+  Future<void> _initializeModes() async {
+    final prefs = await SharedPreferences.getInstance();
+    _prefs = prefs;
     _generateGameModes();
+    state = state.copyWith(
+      totalModesPlayed: prefs.getInt('total_modes_played') ?? 0,
+    );
   }
 
   /// Build initial state
-  static GameModesState _buildInitialState(SharedPreferences prefs) {
-    return GameModesState(
+  static GameModesState _buildInitialState() {
+    return const GameModesState(
       availableModes: [],
-      totalModesPlayed: prefs.getInt('total_modes_played') ?? 0,
+      totalModesPlayed: 0,
     );
   }
 
@@ -262,6 +267,7 @@ class GameModesNotifier extends StateNotifier<GameModesState> {
       }).toList();
 
       final newTotal = state.totalModesPlayed + 1;
+      final prefs = _prefs ??= await SharedPreferences.getInstance();
       await prefs.setInt('total_modes_played', newTotal);
 
       state = state.copyWith(
@@ -298,10 +304,7 @@ class GameModesNotifier extends StateNotifier<GameModesState> {
 /// Riverpod provider for game modes
 final gameModesProvider =
     StateNotifierProvider<GameModesNotifier, GameModesState>(
-  (ref) async {
-    final prefs = await SharedPreferences.getInstance();
-    return GameModesNotifier(prefs);
-  },
+  (ref) => GameModesNotifier(),
 );
 
 /// Alternative sync provider (for testing)
