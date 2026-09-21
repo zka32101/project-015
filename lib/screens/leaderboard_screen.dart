@@ -260,7 +260,7 @@ class _PlayerRankCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${entry.rating.toStringAsFixed(0)}',
+                    entry.rating.toStringAsFixed(0),
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -491,7 +491,7 @@ class _RankingListItem extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${entry.rating.toStringAsFixed(0)}',
+                entry.rating.toStringAsFixed(0),
                 style: theme.textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: Colors.blue.shade600,

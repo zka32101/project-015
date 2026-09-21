@@ -8,9 +8,9 @@ class GameStatisticsPanel extends ConsumerWidget {
   final GameAnalytics analytics;
 
   const GameStatisticsPanel({
-    Key? key,
+    super.key,
     required this.analytics,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -99,10 +99,10 @@ class _StatisticCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -135,9 +135,9 @@ class DifficultyAnalyticsPanel extends ConsumerWidget {
   final GameAnalytics analytics;
 
   const DifficultyAnalyticsPanel({
-    Key? key,
+    super.key,
     required this.analytics,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -215,7 +215,7 @@ class DifficultyAnalyticsPanel extends ConsumerWidget {
                 const SizedBox(height: 8),
               ],
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -227,9 +227,9 @@ class StreakAndPerformancePanel extends ConsumerWidget {
   final GameAnalytics analytics;
 
   const StreakAndPerformancePanel({
-    Key? key,
+    super.key,
     required this.analytics,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -284,10 +284,10 @@ class StreakAndPerformancePanel extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.blue[900]?.withOpacity(0.3),
+              color: Colors.blue[900]?.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: Colors.blue[300]!.withOpacity(0.3),
+                color: Colors.blue[300]!.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -350,10 +350,10 @@ class _PerformanceIndicator extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: _color.withOpacity(0.1),
+        color: _color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: _color.withOpacity(0.3),
+          color: _color.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -386,9 +386,9 @@ class MilestonePanel extends ConsumerWidget {
   final GameAnalytics analytics;
 
   const MilestonePanel({
-    Key? key,
+    super.key,
     required this.analytics,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -430,10 +430,10 @@ class MilestonePanel extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.amber[900]?.withOpacity(0.3),
+                  color: Colors.amber[900]?.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(
-                    color: Colors.amber[300]!.withOpacity(0.3),
+                    color: Colors.amber[300]!.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -513,10 +513,10 @@ class _MilestoneCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: achieved ? Colors.amber[900]?.withOpacity(0.2) : Colors.grey[800]?.withOpacity(0.3),
+        color: achieved ? Colors.amber[900]?.withValues(alpha: 0.2) : Colors.grey[800]?.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: achieved ? Colors.amber[300]!.withOpacity(0.5) : Colors.grey[700]!.withOpacity(0.3),
+          color: achieved ? Colors.amber[300]!.withValues(alpha: 0.5) : Colors.grey[700]!.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -563,9 +563,9 @@ class ActivityAnalyticsPanel extends ConsumerWidget {
   final GameAnalytics analytics;
 
   const ActivityAnalyticsPanel({
-    Key? key,
+    super.key,
     required this.analytics,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -641,10 +641,10 @@ class _ActivityCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -677,9 +677,9 @@ class GameAnalyticsDashboard extends ConsumerWidget {
   final GameAnalytics analytics;
 
   const GameAnalyticsDashboard({
-    Key? key,
+    super.key,
     required this.analytics,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

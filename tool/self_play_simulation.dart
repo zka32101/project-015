@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 import 'dart:math';
 
 import 'package:reversia/engine/game_state.dart';

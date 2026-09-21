@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -154,7 +155,7 @@ class GameViewModel extends Notifier<GameViewState> {
       final prefs = await SharedPreferences.getInstance();
       await _historyManager.init(prefs);
     } catch (e) {
-      print('Error initializing history manager: $e');
+      debugPrint('Error initializing history manager: $e');
     }
   }
 
@@ -246,7 +247,7 @@ class GameViewModel extends Notifier<GameViewState> {
     final record = createGameRecord();
     // Fire and forget - don't block game flow on record saving
     _historyManager.addRecord(record).catchError((e) {
-      print('Error saving game record: $e');
+      debugPrint('Error saving game record: $e');
     });
   }
 
@@ -430,7 +431,7 @@ class GameViewModel extends Notifier<GameViewState> {
     if (!_undoRedoManager.canUndo) return;
 
     if (_undoRedoManager.undo()) {
-      final previousMove = s.game.moveHistory.length >= 1 ? s.game.moveHistory.last : null;
+      final previousMove = s.game.moveHistory.isNotEmpty ? s.game.moveHistory.last : null;
       state = s._carryMeta(s.game, lastMove: previousMove);
     }
   }
@@ -451,7 +452,7 @@ class GameViewModel extends Notifier<GameViewState> {
     final s = state;
     final undone = _undoRedoManager.undoMultiple(count);
     if (undone > 0) {
-      final previousMove = s.game.moveHistory.length >= 1 ? s.game.moveHistory.last : null;
+      final previousMove = s.game.moveHistory.isNotEmpty ? s.game.moveHistory.last : null;
       state = s._carryMeta(s.game, lastMove: previousMove);
     }
   }

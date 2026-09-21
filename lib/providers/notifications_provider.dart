@@ -183,7 +183,7 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
     final notification = AppNotification(
       id: 'streak_${DateTime.now().millisecondsSinceEpoch}',
       type: NotificationType.streak,
-      title: '${streakDays}日連続ログイン！',
+      title: '$streakDays日連続ログイン！',
       message: 'ストリークボーナスを獲得しました',
       timestamp: DateTime.now(),
     );

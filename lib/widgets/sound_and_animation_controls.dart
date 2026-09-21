@@ -9,16 +9,16 @@ class SoundAndAnimationControls extends ConsumerWidget {
   final VoidCallback? onSettingsChanged;
 
   const SoundAndAnimationControls({
-    Key? key,
+    super.key,
     this.onSettingsChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: Colors.white10,
@@ -86,7 +86,7 @@ class _ControlButton extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: isEnabled ? Colors.blue[900]?.withOpacity(0.5) : Colors.grey[800]?.withOpacity(0.3),
+        color: isEnabled ? Colors.blue[900]?.withValues(alpha: 0.5) : Colors.grey[800]?.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
           color: isEnabled ? Colors.blue[300]! : Colors.grey[700]!,
@@ -122,10 +122,10 @@ class SoundSettingsPanel extends StatefulWidget {
   final Function(SoundSettings) onSettingsChanged;
 
   const SoundSettingsPanel({
-    Key? key,
+    super.key,
     required this.settings,
     required this.onSettingsChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<SoundSettingsPanel> createState() => _SoundSettingsPanelState();
@@ -246,10 +246,10 @@ class AnimationSettingsPanel extends StatefulWidget {
   final Function(AnimationConfig) onConfigChanged;
 
   const AnimationSettingsPanel({
-    Key? key,
+    super.key,
     required this.config,
     required this.onConfigChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<AnimationSettingsPanel> createState() => _AnimationSettingsPanelState();
@@ -372,7 +372,7 @@ class _SettingRow extends StatelessWidget {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: Colors.blue[600],
+          activeThumbColor: Colors.blue[600],
           inactiveThumbColor: Colors.grey[700],
           inactiveTrackColor: Colors.grey[800],
         ),
@@ -386,9 +386,9 @@ class AnimationIndicator extends StatelessWidget {
   final int activeAnimationCount;
 
   const AnimationIndicator({
-    Key? key,
+    super.key,
     required this.activeAnimationCount,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -399,10 +399,10 @@ class AnimationIndicator extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.purple[900]?.withOpacity(0.7),
+        color: Colors.purple[900]?.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.purple[400]!.withOpacity(0.5),
+          color: Colors.purple[400]!.withValues(alpha: 0.5),
           width: 1,
         ),
       ),

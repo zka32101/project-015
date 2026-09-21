@@ -209,7 +209,7 @@ class _GameInsightsScreenState extends State<GameInsightsScreen> {
   String _formatDuration(int seconds) {
     final minutes = seconds ~/ 60;
     final secs = seconds % 60;
-    return '${minutes}分${secs}秒';
+    return '$minutes分$secs秒';
   }
 
   String _formatWinRate(double rate) {

@@ -10,12 +10,12 @@ class ReplayControlsPanel extends StatefulWidget {
   final VoidCallback onPlayPause;
 
   const ReplayControlsPanel({
-    Key? key,
+    super.key,
     required this.replay,
     required this.onMoveChanged,
     this.isPlaying = false,
     required this.onPlayPause,
-  }) : super(key: key);
+  });
 
   @override
   State<ReplayControlsPanel> createState() => _ReplayControlsPanelState();
@@ -41,7 +41,7 @@ class _ReplayControlsPanelState extends State<ReplayControlsPanel> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
+        color: Colors.black.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -178,10 +178,10 @@ class ReplayTimeline extends StatelessWidget {
   final VoidCallback onMoveChanged;
 
   const ReplayTimeline({
-    Key? key,
+    super.key,
     required this.replay,
     required this.onMoveChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -245,7 +245,7 @@ class _TimelineButton extends StatelessWidget {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue[700] : Colors.blue[900]?.withOpacity(0.5),
+          color: isSelected ? Colors.blue[700] : Colors.blue[900]?.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: isSelected ? Colors.blue[300]! : Colors.transparent,
@@ -272,9 +272,9 @@ class ReplayMoveInfo extends StatelessWidget {
   final GameReplay replay;
 
   const ReplayMoveInfo({
-    Key? key,
+    super.key,
     required this.replay,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -284,7 +284,7 @@ class ReplayMoveInfo extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -340,17 +340,17 @@ class ReplaySpeedControl extends StatelessWidget {
   final ValueChanged<double> onSpeedChanged;
 
   const ReplaySpeedControl({
-    Key? key,
+    super.key,
     required this.speed,
     required this.onSpeedChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(

@@ -7,7 +7,7 @@ import '../viewmodels/game_view_model.dart';
 
 /// Displays current game in standard algebraic notation
 class GameNotationDisplay extends ConsumerWidget {
-  const GameNotationDisplay({Key? key}) : super(key: key);
+  const GameNotationDisplay({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,7 +18,7 @@ class GameNotationDisplay extends ConsumerWidget {
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.2),
+          color: Colors.black.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
@@ -37,7 +37,7 @@ class GameNotationDisplay extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: Colors.white10,
@@ -82,7 +82,7 @@ class GameNotationDisplay extends ConsumerWidget {
 
 /// Detailed game history sheet with turn-by-turn breakdown
 class GameHistorySheet extends ConsumerWidget {
-  const GameHistorySheet({Key? key}) : super(key: key);
+  const GameHistorySheet({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -140,7 +140,7 @@ class _TurnHistoryTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.2),
+        color: Colors.black.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -150,7 +150,7 @@ class _TurnHistoryTile extends StatelessWidget {
             width: 40,
             height: 32,
             decoration: BoxDecoration(
-              color: Colors.blue[900]?.withOpacity(0.5),
+              color: Colors.blue[900]?.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Center(
@@ -226,7 +226,7 @@ class _TurnHistoryTile extends StatelessWidget {
 
 /// Compact game status with move count
 class GameStatusBadge extends ConsumerWidget {
-  const GameStatusBadge({Key? key}) : super(key: key);
+  const GameStatusBadge({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -236,7 +236,7 @@ class GameStatusBadge extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
+        color: Colors.black.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -304,7 +304,7 @@ void showGameHistorySheet(BuildContext context) {
 
 /// Copy game notation button
 class CopyNotationButton extends ConsumerWidget {
-  const CopyNotationButton({Key? key}) : super(key: key);
+  const CopyNotationButton({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
