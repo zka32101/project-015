@@ -8,9 +8,9 @@ class UndoRedoControls extends ConsumerWidget {
   final VoidCallback onStateChanged;
 
   const UndoRedoControls({
-    Key? key,
+    super.key,
     required this.onStateChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,7 +23,7 @@ class UndoRedoControls extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.2),
+        color: Colors.black.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -109,9 +109,9 @@ class QuickUndoButton extends ConsumerWidget {
   final VoidCallback? onUndo;
 
   const QuickUndoButton({
-    Key? key,
+    super.key,
     this.onUndo,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -141,7 +141,7 @@ class QuickUndoButton extends ConsumerWidget {
 
 /// Undo/Redo history display showing recent moves
 class UndoRedoHistory extends ConsumerWidget {
-  const UndoRedoHistory({Key? key}) : super(key: key);
+  const UndoRedoHistory({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -154,7 +154,7 @@ class UndoRedoHistory extends ConsumerWidget {
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.2),
+          color: Colors.black.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
@@ -171,7 +171,7 @@ class UndoRedoHistory extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: Colors.white10,
@@ -243,17 +243,17 @@ class UndoRedoHistory extends ConsumerWidget {
 
 /// Undo/Redo keyboard shortcuts help
 class UndoRedoKeyboardHelp extends StatelessWidget {
-  const UndoRedoKeyboardHelp({Key? key}) : super(key: key);
+  const UndoRedoKeyboardHelp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.blue[900]?.withOpacity(0.3),
+        color: Colors.blue[900]?.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.blue[300]?.withOpacity(0.5) ?? Colors.blue,
+          color: Colors.blue[300]?.withValues(alpha: 0.5) ?? Colors.blue,
           width: 1,
         ),
       ),

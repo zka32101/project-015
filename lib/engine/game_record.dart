@@ -43,7 +43,7 @@ class GameRecord {
   String get durationDisplay {
     final minutes = durationSeconds ~/ 60;
     final seconds = durationSeconds % 60;
-    return '${minutes}分${seconds}秒';
+    return '$minutes分$seconds秒';
   }
 
   Map<String, dynamic> toJson() => {

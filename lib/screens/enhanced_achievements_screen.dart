@@ -203,15 +203,15 @@ class _AchievementHeader extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.amber[800]!.withOpacity(0.1),
-            Colors.amber[700]!.withOpacity(0.05),
+            Colors.amber[800]!.withValues(alpha: 0.1),
+            Colors.amber[700]!.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         border: Border(
           bottom: BorderSide(
-            color: Colors.amber[700]!.withOpacity(0.2),
+            color: Colors.amber[700]!.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -319,8 +319,8 @@ class _AchievementBadgeCard extends StatelessWidget {
           gradient: isUnlocked
               ? LinearGradient(
                   colors: [
-                    rarityColor.withOpacity(0.2),
-                    rarityColor.withOpacity(0.05),
+                    rarityColor.withValues(alpha: 0.2),
+                    rarityColor.withValues(alpha: 0.05),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -335,7 +335,7 @@ class _AchievementBadgeCard extends StatelessWidget {
           boxShadow: isHighlighted
               ? [
                   BoxShadow(
-                    color: rarityColor.withOpacity(0.5),
+                    color: rarityColor.withValues(alpha: 0.5),
                     blurRadius: 12,
                     spreadRadius: 2,
                   ),
@@ -591,7 +591,7 @@ class _AchievementDetailsSheet extends StatelessWidget {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: Colors.green.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: Colors.green,

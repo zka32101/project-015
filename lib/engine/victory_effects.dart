@@ -116,7 +116,7 @@ class _VictoryCrownWidgetState extends State<VictoryCrownWidget>
         return Transform(
           alignment: Alignment.center,
           transform: Matrix4.identity()
-            ..scale(_bounceAnimation.value)
+            ..scaleByDouble(_bounceAnimation.value, _bounceAnimation.value, _bounceAnimation.value, 1.0)
             ..setEntry(3, 2, 0.001)
             ..rotateZ(_rotationAnimation.value),
           child: CustomPaint(

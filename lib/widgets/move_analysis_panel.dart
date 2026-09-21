@@ -11,10 +11,10 @@ class MoveAnalysisPanel extends ConsumerWidget {
   final int suggestionsCount;
 
   const MoveAnalysisPanel({
-    Key? key,
+    super.key,
     this.showOnlyBest = false,
     this.suggestionsCount = 3,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,7 +36,7 @@ class MoveAnalysisPanel extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.all(12),
@@ -116,7 +116,7 @@ class _MoveAnalysisItem extends StatelessWidget {
                       Text(
                         analysis.reasons.first,
                         style: TextStyle(
-                          color: textColor.withOpacity(0.7),
+                          color: textColor.withValues(alpha: 0.7),
                           fontSize: 11,
                         ),
                         maxLines: 1,
@@ -163,9 +163,9 @@ class MoveStrengthBadge extends ConsumerWidget {
   final Move move;
 
   const MoveStrengthBadge({
-    Key? key,
+    super.key,
     required this.move,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -210,7 +210,7 @@ class MoveStrengthBadge extends ConsumerWidget {
 
 /// Strategic advice banner for the current position
 class StrategicAdviceBanner extends ConsumerWidget {
-  const StrategicAdviceBanner({Key? key}) : super(key: key);
+  const StrategicAdviceBanner({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -227,7 +227,7 @@ class StrategicAdviceBanner extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.blue[900]?.withOpacity(0.3),
+        color: Colors.blue[900]?.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: Colors.blue[700]!,
@@ -252,9 +252,9 @@ class MoveAnalysisDetailsSheet extends StatelessWidget {
   final MoveAnalysis analysis;
 
   const MoveAnalysisDetailsSheet({
-    Key? key,
+    super.key,
     required this.analysis,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -315,7 +315,7 @@ class MoveAnalysisDetailsSheet extends StatelessWidget {
             children: analysis.categories.map((tag) {
               return Chip(
                 label: Text(tag),
-                backgroundColor: categoryColor.withOpacity(0.3),
+                backgroundColor: categoryColor.withValues(alpha: 0.3),
                 labelStyle: TextStyle(color: categoryColor),
                 side: BorderSide(color: categoryColor),
               );
@@ -349,7 +349,7 @@ class MoveAnalysisDetailsSheet extends StatelessWidget {
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
 
           const SizedBox(height: 16),

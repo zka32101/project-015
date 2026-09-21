@@ -10,11 +10,11 @@ class GameStatisticsOverlay extends ConsumerWidget {
   final VoidCallback? onToggle;
 
   const GameStatisticsOverlay({
-    Key? key,
+    super.key,
     required this.analytics,
     this.isVisible = true,
     this.onToggle,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,7 +32,7 @@ class GameStatisticsOverlay extends ConsumerWidget {
       child: Container(
         width: 280,
         decoration: BoxDecoration(
-          color: Colors.grey[900]?.withOpacity(0.9),
+          color: Colors.grey[900]?.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: Colors.white10,
@@ -221,10 +221,10 @@ class _AchievementIndicators extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.amber[900]?.withOpacity(0.2),
+        color: Colors.amber[900]?.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: Colors.amber[300]!.withOpacity(0.3),
+          color: Colors.amber[300]!.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -242,7 +242,7 @@ class _AchievementIndicators extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: achievedCount / totalCount,
                 minHeight: 6,
-                backgroundColor: Colors.amber[900]?.withOpacity(0.3),
+                backgroundColor: Colors.amber[900]?.withValues(alpha: 0.3),
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.amber[400]!),
               ),
             ),
@@ -275,10 +275,10 @@ class _StatisticsToggleButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.blue[900]?.withOpacity(0.5),
+          color: Colors.blue[900]?.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Colors.blue[300]!.withOpacity(0.3),
+            color: Colors.blue[300]!.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -297,16 +297,16 @@ class QuickStatsBar extends ConsumerWidget {
   final GameAnalytics analytics;
 
   const QuickStatsBar({
-    Key? key,
+    super.key,
     required this.analytics,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
+        color: Colors.black.withValues(alpha: 0.4),
         border: Border(
           top: BorderSide(
             color: Colors.white10,
