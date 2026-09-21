@@ -12,7 +12,6 @@ import '../engine/game_record.dart';
 import '../engine/game_state.dart';
 import '../engine/game_undo_redo.dart';
 import '../engine/models.dart';
-import '../engine/move_analyzer.dart';
 import '../engine/move_generator.dart';
 import '../engine/rank.dart';
 import '../engine/statistics.dart';
@@ -479,33 +478,6 @@ class GameViewModel extends Notifier<GameViewState> {
     if (redone > 0) {
       final lastMove = s.game.moveHistory.isNotEmpty ? s.game.moveHistory.last : null;
       state = s._carryMeta(s.game, lastMove: lastMove);
-    }
-  }
-
-  /// Get detailed analysis of all legal moves for current position
-  List<MoveAnalysis> getMoveAnalysis() {
-    return MoveAnalyzer.analyzeMoves(state.game.board, state.game.turn);
-  }
-
-  /// Get the top N best moves with analysis
-  List<MoveAnalysis> getTopMovesSuggestions(int count) {
-    return MoveAnalyzer.getTopMoves(state.game.board, state.game.turn, count);
-  }
-
-  /// Get strategic advice for the current position
-  String getStrategicAdvice() {
-    return MoveAnalyzer.getStrategicAdvice(state.game.board, state.game.turn);
-  }
-
-  /// Get analysis for a specific move
-  MoveAnalysis? analyzeMoveSpecific(Move move) {
-    final analyses = getMoveAnalysis();
-    try {
-      return analyses.firstWhere(
-        (a) => a.move.from == move.from && a.move.to == move.to,
-      );
-    } catch (_) {
-      return null;
     }
   }
 
