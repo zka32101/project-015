@@ -637,13 +637,13 @@ class _ActivityChart extends StatelessWidget {
               _ActivityStat(
                 icon: Icons.date_range,
                 label: '1日平均',
-                value: '${gamesPerDay.toStringAsFixed(1)}',
+                value: gamesPerDay.toStringAsFixed(1),
                 color: Colors.purple,
               ),
               _ActivityStat(
                 icon: Icons.speed,
                 label: 'ゲーム/週',
-                value: '${(gamesPerDay * 7).toStringAsFixed(0)}',
+                value: (gamesPerDay * 7).toStringAsFixed(0),
                 color: Colors.cyan,
               ),
             ],

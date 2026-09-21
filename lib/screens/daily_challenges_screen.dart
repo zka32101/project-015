@@ -190,7 +190,7 @@ class _ChallengesHeader extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${streak}日連続',
+                      '$streak日連続',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.amber,
                         fontWeight: FontWeight.bold,

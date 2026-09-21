@@ -312,7 +312,7 @@ class TournamentsNotifier extends StateNotifier<TournamentsState> {
           matches: List.generate(
             matchCount,
             (j) => TournamentMatch(
-              id: '${id}_r${i}_m${j}',
+              id: '${id}_r${i}_m$j',
               player1Id: 'p${i}_${j}_1',
               player1Name: _generatePlayerName(j * 2),
               player2Id: 'p${i}_${j}_2',

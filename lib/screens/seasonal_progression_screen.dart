@@ -571,7 +571,7 @@ class _RewardCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                '${reward.requiredTier.label}',
+                reward.requiredTier.label,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,

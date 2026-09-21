@@ -476,8 +476,7 @@ class _CategoryList extends StatelessWidget {
                         onFavoriteToggle: () => onFavoriteToggle(tip),
                         onTapped: () => onTipTapped(tip),
                       ),
-                    ))
-                .toList(),
+                    )),
             const Divider(height: 16),
           ],
         );

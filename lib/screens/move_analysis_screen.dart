@@ -560,8 +560,7 @@ class _StrengthsAndImprovements extends StatelessWidget {
                               ),
                             ],
                           ),
-                        ))
-                    .toList(),
+                        )),
               ],
             ),
           ),
@@ -614,8 +613,7 @@ class _StrengthsAndImprovements extends StatelessWidget {
                               ),
                             ],
                           ),
-                        ))
-                    .toList(),
+                        )),
               ],
             ),
           ),

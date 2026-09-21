@@ -188,7 +188,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TextButton(
             onPressed: () async {
               await AppPreferences().resetAll();
-              if (mounted) {
+              if (context.mounted) {
                 Navigator.pop(context);
                 setState(() {
                   _soundEnabled = true;
