@@ -129,8 +129,9 @@ class GameMovesAnalysis {
     if (midgameMoves.isEmpty) return 'ミッドゲームが短すぎます';
     final criticalCount =
         midgameMoves.where((m) => m.quality == 'critical_error').length;
-    if (criticalCount > 0)
-      return '${criticalCount}つの致命的なエラーがありました';
+    if (criticalCount > 0) {
+      return '$criticalCountつの致命的なエラーがありました';
+    }
     return 'ミッドゲームは安定しています';
   }
 

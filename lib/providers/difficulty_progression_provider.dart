@@ -71,7 +71,7 @@ class ProgressionData {
     if (currentWinRate < tier.requiredWinRate) {
       final winRateNeeded = (tier.requiredWinRate * 100).toStringAsFixed(1);
       final currentRate = (currentWinRate * 100).toStringAsFixed(1);
-      return '勝率 $currentRate% → ${winRateNeeded}%が必要';
+      return '勝率 $currentRate% → $winRateNeeded%が必要';
     }
     return '進出可能！';
   }
@@ -272,7 +272,7 @@ class DifficultyProgressionNotifier
       } else {
         final winRateNeeded =
             (currentTier.tier.requiredWinRate * 100).toStringAsFixed(1);
-        return '勝率を ${winRateNeeded}% に上げて進出を目指しましょう';
+        return '勝率を $winRateNeeded% に上げて進出を目指しましょう';
       }
     }
 

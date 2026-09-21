@@ -168,27 +168,36 @@ class BadgesNotifier extends StateNotifier<BadgesState> {
       if (totalWins >= 100) updatedBadges.add('master_100');
       if (totalWins >= 500) updatedBadges.add('legend_500');
 
-      if (analytics.overallWinRate >= 0.7)
+      if (analytics.overallWinRate >= 0.7) {
         updatedBadges.add('dominant_70');
-      if (analytics.overallWinRate >= 0.8)
+      }
+      if (analytics.overallWinRate >= 0.8) {
         updatedBadges.add('elite_80');
-      if (analytics.overallWinRate >= 0.9)
+      }
+      if (analytics.overallWinRate >= 0.9) {
         updatedBadges.add('unstoppable_90');
+      }
 
-      if (analytics.totalGamesAnalyzed >= 500)
+      if (analytics.totalGamesAnalyzed >= 500) {
         updatedBadges.add('grinder_500');
-      if (analytics.totalGamesAnalyzed >= 1000)
+      }
+      if (analytics.totalGamesAnalyzed >= 1000) {
         updatedBadges.add('addict_1000');
+      }
 
-      if ((leaderboard.playerRank ?? 999999) <= 10)
+      if ((leaderboard.playerRank ?? 999999) <= 10) {
         updatedBadges.add('top_10_rank');
-      if ((leaderboard.playerRank ?? 999999) <= 5)
+      }
+      if ((leaderboard.playerRank ?? 999999) <= 5) {
         updatedBadges.add('top_5_rank');
-      if (leaderboard.playerRank == 1)
+      }
+      if (leaderboard.playerRank == 1) {
         updatedBadges.add('champion_rank');
+      }
 
-      if (seasonal.playerSeasonalData.currentTier == SeasonalTier.master)
+      if (seasonal.playerSeasonalData.currentTier == SeasonalTier.master) {
         updatedBadges.add('master_tier');
+      }
 
       // Check for newly unlocked badges
       final newlyUnlocked = updatedBadges.where(
