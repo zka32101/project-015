@@ -368,11 +368,7 @@ class GameViewModel extends Notifier<GameViewState> {
       if (s.aiDifficulty == null) return;
 
       final ai = ReversiaAi(s.aiDifficulty!);
-      final result = ai.pickMoveWithThinking(
-        s.game.board,
-        aiControlledOwner,
-        moveNumber: s.game.moveHistory.length + 1,
-      );
+      final result = ai.pickMoveWithThinking(s.game.board, aiControlledOwner);
       final move = result.move;
 
       if (move == null) {

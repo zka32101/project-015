@@ -5,7 +5,6 @@ import 'ai_thinking_info.dart';
 import 'board.dart';
 import 'models.dart';
 import 'move_generator.dart';
-import 'opening_book.dart';
 
 enum AiDifficulty { easy, medium, hard }
 
@@ -28,34 +27,25 @@ class ReversiaAi {
 
   ReversiaAi(this.difficulty, [Random? random]) : random = random ?? Random();
 
-  /// [moveNumber] is the 1-based number of the move about to be played
-  /// (e.g. GameState.moveHistory.length + 1). It drives opening-book
-  /// lookups; callers that can't supply it (tests, standalone tools) fall
-  /// back to a conservative estimate that never matches the book, since
-  /// piece count alone can't reliably be mapped back to a move number in
-  /// this game (see _getMoveNumber).
-  Move? pickMove(Board board, Owner owner, {int? moveNumber}) {
+  Move? pickMove(Board board, Owner owner) {
     final moves = MoveGenerator.legalMovesFor(board, owner);
     if (moves.isEmpty) return null;
-    final effectiveMoveNumber = moveNumber ?? _getMoveNumber(board);
 
     switch (difficulty) {
       case AiDifficulty.easy:
-        return _pickEasy(board, owner, moves, effectiveMoveNumber);
+        return _pickEasy(board, owner, moves);
       case AiDifficulty.medium:
-        return _pickGreedy(board, owner, moves, effectiveMoveNumber);
+        return _pickGreedy(board, owner, moves);
       case AiDifficulty.hard:
-        return _pickMinimax(board, owner, moves, effectiveMoveNumber);
+        return _pickMinimax(board, owner, moves);
     }
   }
 
   /// Picks a move and returns detailed thinking information including
   /// evaluation score and search depth. Useful for displaying AI thinking.
-  /// See [pickMove] for the meaning of [moveNumber].
-  AiMoveResult pickMoveWithThinking(Board board, Owner owner, {int? moveNumber}) {
+  AiMoveResult pickMoveWithThinking(Board board, Owner owner) {
     final startTime = DateTime.now();
     final moves = MoveGenerator.legalMovesFor(board, owner);
-    final effectiveMoveNumber = moveNumber ?? _getMoveNumber(board);
 
     if (moves.isEmpty) {
       final thinkingTime = DateTime.now().difference(startTime);
@@ -69,7 +59,7 @@ class ReversiaAi {
 
     switch (difficulty) {
       case AiDifficulty.easy:
-        final move = _pickEasy(board, owner, moves, effectiveMoveNumber);
+        final move = _pickEasy(board, owner, moves);
         final thinkingTime = DateTime.now().difference(startTime);
         final score = AiStrategy.evaluateMoveEasy(board, move, owner);
         return AiMoveResult(
@@ -80,7 +70,7 @@ class ReversiaAi {
         );
 
       case AiDifficulty.medium:
-        final move = _pickGreedy(board, owner, moves, effectiveMoveNumber);
+        final move = _pickGreedy(board, owner, moves);
         final thinkingTime = DateTime.now().difference(startTime);
         final score = AiStrategy.evaluateMoveMedium(board, move, owner);
         return AiMoveResult(
@@ -91,7 +81,7 @@ class ReversiaAi {
         );
 
       case AiDifficulty.hard:
-        final result = _pickMinimaxWithThinking(board, owner, moves, effectiveMoveNumber);
+        final result = _pickMinimaxWithThinking(board, owner, moves);
         final thinkingTime = DateTime.now().difference(startTime);
         return AiMoveResult(
           move: result['move'] as Move?,
@@ -102,15 +92,7 @@ class ReversiaAi {
     }
   }
 
-  Move _pickEasy(Board board, Owner owner, List<Move> moves, int moveNumber) {
-    // In opening, give 50% chance to use opening book (helps easy AI learn openings)
-    if (OpeningBook.isInOpeningBook(moveNumber) && random.nextDouble() < 0.5) {
-      final bookMove = _selectOpeningMove(moves, moveNumber);
-      if (bookMove != null) {
-        return bookMove;
-      }
-    }
-
+  Move _pickEasy(Board board, Owner owner, List<Move> moves) {
     // Easy: 80% random, 20% smart (prefer captures)
     if (random.nextDouble() < 0.8) {
       return moves[random.nextInt(moves.length)];
@@ -131,15 +113,7 @@ class ReversiaAi {
     return bestMove ?? moves[random.nextInt(moves.length)];
   }
 
-  Move _pickGreedy(Board board, Owner owner, List<Move> moves, int moveNumber) {
-    // Check opening book for early game moves (medium AI always prefers book moves)
-    if (OpeningBook.isInOpeningBook(moveNumber)) {
-      final bookMove = _selectOpeningMove(moves, moveNumber);
-      if (bookMove != null) {
-        return bookMove;
-      }
-    }
-
+  Move _pickGreedy(Board board, Owner owner, List<Move> moves) {
     // Use advanced evaluator for greedy move selection
     Move? bestMove;
     var bestScore = -9999;
@@ -155,15 +129,7 @@ class ReversiaAi {
     return bestMove ?? moves[random.nextInt(moves.length)];
   }
 
-  Move _pickMinimax(Board board, Owner owner, List<Move> moves, int moveNumber) {
-    // Check opening book for early game moves
-    if (OpeningBook.isInOpeningBook(moveNumber)) {
-      final bookMove = _selectOpeningMove(moves, moveNumber);
-      if (bookMove != null) {
-        return bookMove;
-      }
-    }
-
+  Move _pickMinimax(Board board, Owner owner, List<Move> moves) {
     // Determine search depth based on game phase
     final depth = _getSearchDepth(board);
 
@@ -200,60 +166,8 @@ class ReversiaAi {
     return _hardSearchDepth;
   }
 
-  /// Fallback move-number estimate for callers that can't supply the real
-  /// one via [pickMove]'s `moveNumber` parameter (tests, HintEngine).
-  ///
-  /// Unlike Othello, this game starts with 18 pieces on the board and
-  /// pieces are only ever removed (a capture converts a piece in place or,
-  /// for a king, removes it outright) -- moving to an empty square doesn't
-  /// change the count at all. Piece count therefore has no reliable
-  /// relationship to how many moves have been played, so guessing a small
-  /// number here would risk selecting nonsensical "opening" moves deep into
-  /// a game. Return a number outside the opening book's range instead.
-  int _getMoveNumber(Board board) => 999;
-
-  /// Select a move from the opening book if available.
-  /// Prefers highest-strength moves but picks randomly among strong options.
-  Move? _selectOpeningMove(List<Move> legalMoves, int moveNumber) {
-    final bookMoves = OpeningBook.getOpeningMoves(moveNumber);
-    if (bookMoves.isEmpty) return null;
-
-    // Filter book moves to only legal moves in current position
-    final validBookMoves = bookMoves
-        .where((bookMove) => legalMoves.any((legal) =>
-            legal.from == bookMove.from && legal.to == bookMove.to))
-        .toList();
-
-    if (validBookMoves.isEmpty) return null;
-
-    // For medium difficulty, pick strongest. For hard, add some randomness.
-    if (difficulty == AiDifficulty.medium) {
-      return validBookMoves.first; // Best move
-    } else {
-      // Hard: 70% pick strongest, 30% pick random strong move
-      if (random.nextDouble() < 0.7) {
-        return validBookMoves.first;
-      } else {
-        return validBookMoves[random.nextInt(validBookMoves.length)];
-      }
-    }
-  }
-
   /// Minimax with thinking that returns both move and evaluation score.
-  Map<String, Object?> _pickMinimaxWithThinking(
-      Board board, Owner owner, List<Move> moves, int moveNumber) {
-    // Check opening book for early game moves
-    if (OpeningBook.isInOpeningBook(moveNumber)) {
-      final bookMove = _selectOpeningMove(moves, moveNumber);
-      if (bookMove != null) {
-        return {
-          'move': bookMove,
-          'score': null,  // Opening book moves don't have evaluation scores
-          'depth': 1,     // Treat as shallow lookup
-        };
-      }
-    }
-
+  Map<String, Object?> _pickMinimaxWithThinking(Board board, Owner owner, List<Move> moves) {
     // Determine search depth based on game phase
     final depth = _getSearchDepth(board);
 
