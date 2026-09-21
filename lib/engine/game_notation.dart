@@ -3,10 +3,18 @@ import 'models.dart';
 /// Game notation system for recording and replaying Reversia games
 /// Uses standard algebraic notation: column (a-f) + row (1-6)
 class GameNotation {
-  /// Convert a move to standard notation (e.g., "c4" for column C, row 4)
+  /// Convert a move to standard notation: origin square + destination square
+  /// (e.g., "c4d5" for column C row 4 to column D row 5). Encoding only the
+  /// destination would make the round trip through notationToGame() lossy --
+  /// its 4-character branch is the one that reconstructs a real origin
+  /// square, so the encoder must always produce that format.
   static String moveToNotation(Move move) {
-    final col = String.fromCharCode(97 + move.to.col); // a-f
-    final row = move.to.row + 1; // 1-6
+    return '${_squareToNotation(move.from)}${_squareToNotation(move.to)}';
+  }
+
+  static String _squareToNotation(Square square) {
+    final col = String.fromCharCode(97 + square.col); // a-f
+    final row = square.row + 1; // 1-6
     return '$col$row';
   }
 
@@ -28,7 +36,8 @@ class GameNotation {
   }
 
   /// Convert entire game history to notation string
-  /// Format: "1. c4 d3 2. c5 b4 ..." (moves separated by spaces, turns by dots)
+  /// Format: "1. c4d3 e2f3 2. c5d4 b4b5 ..." (each move is origin+destination,
+  /// moves separated by spaces, turns by dots)
   static String gameToNotation(List<Move> moveHistory) {
     if (moveHistory.isEmpty) return '';
 
