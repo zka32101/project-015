@@ -11,9 +11,9 @@ class SavedGamesPanel extends ConsumerStatefulWidget {
   final VoidCallback onGameSelected;
 
   const SavedGamesPanel({
-    Key? key,
+    super.key,
     required this.onGameSelected,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<SavedGamesPanel> createState() => _SavedGamesPanelState();
@@ -148,7 +148,7 @@ class _SavedGameTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: Colors.white10,
@@ -187,12 +187,12 @@ class _SavedGameTile extends StatelessWidget {
         trailing: PopupMenuButton(
           itemBuilder: (context) => [
             PopupMenuItem(
-              child: const Text('Replay'),
               onTap: onSelected,
+              child: const Text('Replay'),
             ),
             PopupMenuItem(
-              child: const Text('Delete'),
               onTap: onDelete,
+              child: const Text('Delete'),
             ),
           ],
         ),
@@ -204,7 +204,7 @@ class _SavedGameTile extends StatelessWidget {
 
 /// Storage statistics display
 class StorageStatsDisplay extends ConsumerWidget {
-  const StorageStatsDisplay({Key? key}) : super(key: key);
+  const StorageStatsDisplay({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -220,7 +220,7 @@ class StorageStatsDisplay extends ConsumerWidget {
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
@@ -276,9 +276,9 @@ class QuickSaveButton extends ConsumerWidget {
   final Function(bool success) onSaveComplete;
 
   const QuickSaveButton({
-    Key? key,
+    super.key,
     required this.onSaveComplete,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -307,6 +307,8 @@ class QuickSaveButton extends ConsumerWidget {
         );
         final success = await GameStorage.saveGame(record);
 
+        if (!context.mounted) return;
+
         onSaveComplete(success);
 
         if (success) {
@@ -330,10 +332,10 @@ class LoadGameDialog extends StatelessWidget {
   final VoidCallback onLoad;
 
   const LoadGameDialog({
-    Key? key,
+    super.key,
     required this.gameInfo,
     required this.onLoad,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
