@@ -89,8 +89,7 @@ void main() {
       // game's fixed 18-piece starting total (which only ever decreases),
       // so the hard AI always used the deeper endgame search from move 1.
       final ai = ReversiaAi(AiDifficulty.hard, Random(1));
-      final result = ai.pickMoveWithThinking(Board.initial(), Owner.playerA,
-          moveNumber: 999); // outside the opening book's range
+      final result = ai.pickMoveWithThinking(Board.initial(), Owner.playerA);
       expect(result.searchDepth, 4);
     });
 
@@ -102,39 +101,8 @@ void main() {
           const Piece(type: PieceType.king, owner: Owner.playerB, face: Face.front));
 
       final ai = ReversiaAi(AiDifficulty.hard, Random(1));
-      final result = ai.pickMoveWithThinking(board, Owner.playerA, moveNumber: 999);
+      final result = ai.pickMoveWithThinking(board, Owner.playerA);
       expect(result.searchDepth, 8);
-    });
-
-    test(
-        'opening book overrides greedy scoring for medium difficulty once moveNumber is supplied',
-        () {
-      // Regression test: _getMoveNumber() used to estimate the move number
-      // from total piece count using an Othello-style model (start at 4
-      // pieces, +1/move) that doesn't match this game's 18-piece,
-      // capture-only-removes rules, so it never mapped back into the
-      // opening book's 1-5 range and the book was permanently unreachable.
-      final board = Board.empty();
-      board.set(const Square(2, 0),
-          const Piece(type: PieceType.normal, owner: Owner.playerA, face: Face.front));
-      board.set(const Square(3, 0),
-          const Piece(type: PieceType.normal, owner: Owner.playerB, face: Face.front));
-
-      final ai = ReversiaAi(AiDifficulty.medium);
-
-      // Without a supplied moveNumber, the AI has no reliable way to know
-      // it's in the opening and falls back to greedy scoring, which
-      // strongly prefers the available capture at (2,0)->(3,0).
-      final withoutMoveNumber = ai.pickMove(board, Owner.playerA);
-      expect(withoutMoveNumber, const Move(Square(2, 0), Square(3, 0)));
-
-      // With moveNumber: 1 (matching OpeningBook's move-1 entries), the AI
-      // must consult and take the book move -- (2,0)->(2,1) is listed for
-      // move 1 -- even though it's a strictly worse greedy score than the
-      // free capture at (3,0). Medium always prefers the book's top move
-      // when one is legally available.
-      final withMoveNumber = ai.pickMove(board, Owner.playerA, moveNumber: 1);
-      expect(withMoveNumber, const Move(Square(2, 0), Square(2, 1)));
     });
   });
 }
