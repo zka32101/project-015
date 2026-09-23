@@ -1,13 +1,27 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:reversia/providers/cloud_sync_provider.dart';
 
+/// GoogleSignIn's real signIn()/signOut() go through a platform channel
+/// that isn't available in a plain `test()` (no Flutter binding, no native
+/// plugin), so tests never exercise it directly -- this stub keeps
+/// CloudSyncNotifier's constructor from touching it at all.
+class _StubGoogleSignIn extends GoogleSignIn {
+  @override
+  Future<GoogleSignInAccount?> signOut() async => null;
+}
+
 CloudSyncNotifier _buildNotifier(FakeFirebaseFirestore firestore, String uid) {
   final auth = MockFirebaseAuth(mockUser: MockUser(uid: uid), signedIn: true);
-  return CloudSyncNotifier(firestore: firestore, auth: auth);
+  return CloudSyncNotifier(
+    firestore: firestore,
+    auth: auth,
+    googleSignIn: _StubGoogleSignIn(),
+  );
 }
 
 void main() {
@@ -88,7 +102,11 @@ void main() {
 
     test('syncNow is a no-op when signed out', () async {
       final auth = MockFirebaseAuth(signedIn: false);
-      final notifier = CloudSyncNotifier(firestore: firestore, auth: auth);
+      final notifier = CloudSyncNotifier(
+        firestore: firestore,
+        auth: auth,
+        googleSignIn: _StubGoogleSignIn(),
+      );
       final prefs = await SharedPreferences.getInstance();
 
       await notifier.syncNow(prefs);
