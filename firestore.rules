@@ -65,5 +65,11 @@ service cloud.firestore {
                   && request.resource.data.diff(resource.data).affectedKeys()
                       .hasOnly(['matchId'])));
     }
+
+    // Single-player progress backup (lib/providers/cloud_sync_provider.dart).
+    // Only the signed-in owner may ever read or write their own backup.
+    match /userProgress/{uid} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
+    }
   }
 }

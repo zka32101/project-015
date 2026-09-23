@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../engine/preferences.dart';
 import '../engine/sound_manager.dart';
+import 'cloud_sync_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -137,6 +138,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
+                ),
+              ),
+            ],
+          ),
+          const Divider(),
+          // Account / cloud backup
+          _SettingsSection(
+            title: 'アカウント',
+            children: [
+              ListTile(
+                leading: const Icon(Icons.cloud),
+                title: const Text('クラウド同期'),
+                subtitle: const Text('Googleアカウントで成績・対局履歴をバックアップ'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CloudSyncScreen()),
                 ),
               ),
             ],

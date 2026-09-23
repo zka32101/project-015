@@ -147,6 +147,16 @@ class GameViewModel extends Notifier<GameViewState> {
     return GameViewState(game: gameState);
   }
 
+  /// Re-reads rank points, statistics, session history, and game records
+  /// from SharedPreferences. Used after CloudSyncNotifier writes a restored
+  /// backup directly to prefs, so the UI reflects it without an app restart.
+  Future<void> reloadFromPrefs() async {
+    await _loadRankPoints();
+    await _loadStatistics();
+    await _loadSessionHistory();
+    await _initializeHistoryManager();
+  }
+
   /// Initialize the game history manager
   Future<void> _initializeHistoryManager() async {
     _historyManager = GameHistoryManager();
