@@ -1,0 +1,69 @@
+rules_version = '2';
+
+// Security rules for the online multiplayer data model used by
+// lib/providers/multiplayer_provider.dart. Deploy with:
+//   firebase deploy --only firestore:rules
+//
+// These are written for a hobby-scale, purely client-driven matchmaking
+// design (no Cloud Functions): a joining/claiming player writes directly
+// into the host/queued player's document to start a match, so the rules
+// below deliberately allow a narrow "claim" write by someone other than
+// the document's owner. Review with the Firestore Rules Playground or
+// emulator before relying on this for anything beyond a small player base.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isParticipant(matchData) {
+      return matchData.player1Uid == request.auth.uid ||
+          matchData.player2Uid == request.auth.uid;
+    }
+
+    match /lobbies/{lobbyId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+          && request.resource.data.hostUid == request.auth.uid
+          && request.resource.data.playerCount == 1
+          && request.resource.data.matchId == null;
+
+      // Only a join claim (playerCount + matchId, on a still-open lobby)
+      // is allowed; the host's own fields are otherwise immutable.
+      allow update: if isSignedIn()
+          && resource.data.matchId == null
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['playerCount', 'matchId']);
+
+      allow delete: if isSignedIn() && resource.data.hostUid == request.auth.uid;
+    }
+
+    match /matches/{matchId} {
+      allow read: if isSignedIn() && isParticipant(resource.data);
+
+      allow create: if isSignedIn() && isParticipant(request.resource.data);
+
+      allow update: if isSignedIn() && isParticipant(resource.data);
+    }
+
+    match /quickMatchQueue/{uid} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+          && request.auth.uid == uid
+          && request.resource.data.matchId == null;
+
+      allow delete: if isSignedIn() && request.auth.uid == uid;
+
+      // The document owner may update anything; anyone else may only
+      // *claim* it -- setting matchId on a still-unclaimed queue entry,
+      // and nothing else.
+      allow update: if isSignedIn()
+          && (request.auth.uid == uid
+              || (resource.data.matchId == null
+                  && request.resource.data.diff(resource.data).affectedKeys()
+                      .hasOnly(['matchId'])));
+    }
+  }
+}
