@@ -116,7 +116,7 @@ class CloudSyncNotifier extends StateNotifier<CloudSyncState> {
         email: user.email,
       );
 
-      return restoreOrUploadFor(user.uid, prefs);
+      return await restoreOrUploadFor(user.uid, prefs);
     } catch (_) {
       state = state.copyWith(isSyncing: false, error: 'サインインに失敗しました');
       return false;
