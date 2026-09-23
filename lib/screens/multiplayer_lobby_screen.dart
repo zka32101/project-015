@@ -11,6 +11,10 @@ class MultiplayerLobbyScreen extends ConsumerWidget {
     final multiplayerState = ref.watch(multiplayerProvider);
     final theme = Theme.of(context);
 
+    if (multiplayerState.currentMatch != null) {
+      return _MatchFoundPlaceholder(match: multiplayerState.currentMatch!);
+    }
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -18,6 +22,13 @@ class MultiplayerLobbyScreen extends ConsumerWidget {
         appBar: AppBar(
           title: const Text('マルチプレイ'),
           elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: 'ロビーを作成',
+              onPressed: () => _showHostLobbyDialog(context, ref),
+            ),
+          ],
           bottom: TabBar(
             tabs: [
               Tab(
@@ -97,6 +108,7 @@ class MultiplayerLobbyScreen extends ConsumerWidget {
   void _showQuickMatchDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('クイックマッチ'),
         content: const Text('マッチメイキング中...\n同等レートのプレイヤーを探しています'),
@@ -109,14 +121,119 @@ class MultiplayerLobbyScreen extends ConsumerWidget {
       ),
     );
 
-    Future.delayed(const Duration(seconds: 2), () {
+    ref.read(multiplayerProvider.notifier).startQuickMatch().then((_) {
       if (!context.mounted) return;
       Navigator.pop(context);
-      ref.read(multiplayerProvider.notifier).startQuickMatch();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('対戦相手が見つかりました！')),
-      );
+
+      final state = ref.read(multiplayerProvider);
+      final message = state.currentMatch != null
+          ? '対戦相手が見つかりました！'
+          : state.error ?? '対戦相手を探しています... 見つかり次第お知らせします';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     });
+  }
+
+  void _showHostLobbyDialog(BuildContext context, WidgetRef ref) {
+    int timeLimit = 10;
+    bool isRanked = true;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('ロビーを作成'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              DropdownButtonFormField<int>(
+                initialValue: timeLimit,
+                decoration: const InputDecoration(labelText: '持ち時間'),
+                items: const [5, 10, 15, 30]
+                    .map((m) => DropdownMenuItem(value: m, child: Text('$m分')))
+                    .toList(),
+                onChanged: (value) => setState(() => timeLimit = value ?? timeLimit),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('ランク戦'),
+                value: isRanked,
+                onChanged: (value) => setState(() => isRanked = value),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('キャンセル'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ref.read(multiplayerProvider.notifier).hostLobby(
+                      hostName: 'あなた',
+                      hostAvatarEmoji: '🎮',
+                      hostRating: 1500,
+                      gameMode: isRanked ? 'ランク戦' : 'カジュアル戦',
+                      timeLimit: timeLimit,
+                      isRanked: isRanked,
+                    );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('ロビーを作成しました。対戦相手を待っています...')),
+                );
+              },
+              child: const Text('作成'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown once [MultiplayerState.currentMatch] is set. There is no live,
+/// synced game board yet -- pairing (lobby/quick match, opponent identity,
+/// turn/piece-count sync) is real and Firestore-backed, but rendering the
+/// actual Reversia board for an online match is a separate follow-up.
+class _MatchFoundPlaceholder extends ConsumerWidget {
+  final MultiplayerMatch match;
+
+  const _MatchFoundPlaceholder({required this.match});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('対戦相手が見つかりました')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('${match.player1AvatarEmoji} ${match.player1Name}'),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text('vs'),
+              ),
+              Text('${match.player2AvatarEmoji} ${match.player2Name}'),
+              const SizedBox(height: 24),
+              Text(
+                '対局画面は現在開発中です。もうしばらくお待ちください。',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+              OutlinedButton(
+                onPressed: () => ref.read(multiplayerProvider.notifier).exitMatch(),
+                child: const Text('退出'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
