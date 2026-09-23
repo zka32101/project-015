@@ -4,6 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/game_notation.dart';
+import '../engine/models.dart';
+
 /// A lobby waiting for a second player, backed by a `lobbies` Firestore
 /// document. Reversia is strictly 2-player, so a lobby always fills at
 /// exactly 2 (host + one joiner); once full, [matchId] is set and both
@@ -93,6 +96,9 @@ class MultiplayerMatch {
   final String currentTurn; // 'player1' or 'player2'
   final double player1Pieces;
   final double player2Pieces;
+  // Every move so far, in standard notation (see GameNotation.moveToNotation),
+  // so both clients can replay the exact same board via GameState.applyMove.
+  final List<String> moves;
 
   const MultiplayerMatch({
     required this.id,
@@ -111,6 +117,7 @@ class MultiplayerMatch {
     required this.currentTurn,
     required this.player1Pieces,
     required this.player2Pieces,
+    this.moves = const [],
   });
 
   Duration get duration => DateTime.now().difference(startedAt);
@@ -134,6 +141,9 @@ class MultiplayerMatch {
       currentTurn: data['currentTurn'] as String,
       player1Pieces: (data['player1Pieces'] as num).toDouble(),
       player2Pieces: (data['player2Pieces'] as num).toDouble(),
+      moves: (data['moves'] as List<dynamic>? ?? const [])
+          .map((m) => m as String)
+          .toList(),
     );
   }
 
@@ -153,6 +163,7 @@ class MultiplayerMatch {
         'currentTurn': currentTurn,
         'player1Pieces': player1Pieces,
         'player2Pieces': player2Pieces,
+        'moves': moves,
         'status': 'active',
         'winner': null,
         // Powers the "my match history" query in _watchHistory below.
@@ -281,6 +292,7 @@ class MultiplayerNotifier extends StateNotifier<MultiplayerState> {
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _matchSub;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _queueSub;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _historySub;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _ownLobbySub;
 
   MultiplayerNotifier({FirebaseFirestore? firestore, FirebaseAuth? auth})
       : _firestore = firestore ?? FirebaseFirestore.instance,
@@ -292,6 +304,10 @@ class MultiplayerNotifier extends StateNotifier<MultiplayerState> {
         )) {
     _initialize();
   }
+
+  /// The signed-in player's uid, for telling player1/player2 apart on the
+  /// online game screen. Null until [_ensureSignedIn] has resolved once.
+  String? get myUid => _auth.currentUser?.uid;
 
   Future<String> _ensureSignedIn() async {
     final current = _auth.currentUser;
@@ -350,7 +366,10 @@ class MultiplayerNotifier extends StateNotifier<MultiplayerState> {
   }
 
   /// Creates a new lobby with the caller as host and waits for someone to
-  /// join it (see [joinLobby]).
+  /// join it (see [joinLobby]). The host's own client learns the match
+  /// started by watching its own lobby document for [matchId] to appear --
+  /// without this, the host would never leave the lobby screen even after
+  /// someone joined, since [joinLobby] runs entirely on the joiner's side.
   Future<void> hostLobby({
     required String hostName,
     required String hostAvatarEmoji,
@@ -360,7 +379,7 @@ class MultiplayerNotifier extends StateNotifier<MultiplayerState> {
     required bool isRanked,
   }) async {
     final uid = await _ensureSignedIn();
-    await _firestore.collection('lobbies').add(
+    final lobbyRef = await _firestore.collection('lobbies').add(
           OnlineLobby(
             id: '',
             hostUid: uid,
@@ -374,6 +393,17 @@ class MultiplayerNotifier extends StateNotifier<MultiplayerState> {
             isRanked: isRanked,
           ).toFirestore(),
         );
+    _watchOwnLobby(lobbyRef);
+  }
+
+  void _watchOwnLobby(DocumentReference<Map<String, dynamic>> lobbyRef) {
+    _ownLobbySub?.cancel();
+    _ownLobbySub = lobbyRef.snapshots().listen((snapshot) {
+      final matchId = snapshot.data()?['matchId'] as String?;
+      if (matchId == null) return;
+      _ownLobbySub?.cancel();
+      _watchMatch(matchId);
+    });
   }
 
   Future<void> joinLobby(
@@ -545,6 +575,29 @@ class MultiplayerNotifier extends StateNotifier<MultiplayerState> {
     });
   }
 
+  /// Appends [move] to the match's move list and pushes the resulting turn
+  /// state, so the opponent's client can replay it locally through
+  /// [_watchMatch]. Called by the online game screen right after it applies
+  /// the same move to its own local GameState.
+  Future<void> pushMove({
+    required Move move,
+    required int moveCount,
+    required String currentTurn,
+    required double player1Pieces,
+    required double player2Pieces,
+  }) async {
+    final match = state.currentMatch;
+    if (match == null) return;
+
+    await _firestore.collection('matches').doc(match.id).update({
+      'moves': FieldValue.arrayUnion([GameNotation.moveToNotation(move)]),
+      'moveCount': moveCount,
+      'currentTurn': currentTurn,
+      'player1Pieces': player1Pieces,
+      'player2Pieces': player2Pieces,
+    });
+  }
+
   /// Pushes the live board state (whose turn, piece counts) to the match
   /// document so the opponent's client picks it up through [_watchMatch].
   Future<void> updateMatchState({
@@ -600,6 +653,7 @@ class MultiplayerNotifier extends StateNotifier<MultiplayerState> {
     _matchSub?.cancel();
     _queueSub?.cancel();
     _historySub?.cancel();
+    _ownLobbySub?.cancel();
     super.dispose();
   }
 }

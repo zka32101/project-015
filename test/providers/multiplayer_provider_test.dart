@@ -1,6 +1,7 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:reversia/engine/models.dart';
 import 'package:reversia/providers/multiplayer_provider.dart';
 
 MultiplayerNotifier _buildNotifier(
@@ -79,6 +80,13 @@ void main() {
       expect(joiner.state.currentMatch!.player1Pieces, 9);
       expect(joiner.state.currentMatch!.player2Pieces, 9);
       expect(host.state.availableLobbies, isEmpty);
+
+      // Regression: joinLobby runs entirely on the joiner's side, so the
+      // host only learns a match started by watching their own lobby doc
+      // (see hostLobby's _watchOwnLobby) -- without that, the host would be
+      // stuck on the lobby screen forever even after someone joined.
+      expect(host.state.currentMatch, isNotNull);
+      expect(host.state.currentMatch!.id, joiner.state.currentMatch!.id);
     });
 
     test('joinLobby with an unknown lobby id surfaces an error instead of throwing', () async {
@@ -155,6 +163,35 @@ void main() {
       expect(joiner.state.currentMatch!.currentTurn, 'player2');
       expect(joiner.state.currentMatch!.player1Pieces, 8);
       expect(joiner.state.currentMatch!.player2Pieces, 7);
+    });
+
+    test('pushMove appends a move that syncs to both players', () async {
+      final host = _buildNotifier(firestore, 'host');
+      await pumpEventQueue();
+      await _hostSampleLobby(host);
+      await pumpEventQueue();
+      final lobbyId = host.state.availableLobbies.first.id;
+
+      final joiner = _buildNotifier(firestore, 'joiner');
+      await pumpEventQueue();
+      await joiner.joinLobby(lobbyId, playerName: '参加者花子');
+      await pumpEventQueue();
+      expect(host.state.currentMatch, isNotNull);
+
+      // Player1 (the host) moves first in a fresh match.
+      await host.pushMove(
+        move: const Move(Square(1, 1), Square(0, 1)),
+        moveCount: 1,
+        currentTurn: 'player2',
+        player1Pieces: 9,
+        player2Pieces: 9,
+      );
+      await pumpEventQueue();
+
+      expect(host.state.currentMatch!.moves, ['b2b1']);
+      expect(host.state.currentMatch!.currentTurn, 'player2');
+      expect(joiner.state.currentMatch!.moves, ['b2b1']);
+      expect(joiner.state.currentMatch!.currentTurn, 'player2');
     });
 
     test('updateMatchState is a no-op when there is no current match', () async {

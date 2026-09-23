@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/multiplayer_provider.dart';
+import 'online_game_screen.dart';
 
 class MultiplayerLobbyScreen extends ConsumerWidget {
   const MultiplayerLobbyScreen({super.key});
@@ -12,7 +13,7 @@ class MultiplayerLobbyScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     if (multiplayerState.currentMatch != null) {
-      return _MatchFoundPlaceholder(match: multiplayerState.currentMatch!);
+      return const OnlineGameScreen();
     }
 
     return DefaultTabController(
@@ -185,52 +186,6 @@ class MultiplayerLobbyScreen extends ConsumerWidget {
               child: const Text('作成'),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Shown once [MultiplayerState.currentMatch] is set. There is no live,
-/// synced game board yet -- pairing (lobby/quick match, opponent identity,
-/// turn/piece-count sync) is real and Firestore-backed, but rendering the
-/// actual Reversia board for an online match is a separate follow-up.
-class _MatchFoundPlaceholder extends ConsumerWidget {
-  final MultiplayerMatch match;
-
-  const _MatchFoundPlaceholder({required this.match});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('対戦相手が見つかりました')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('${match.player1AvatarEmoji} ${match.player1Name}'),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text('vs'),
-              ),
-              Text('${match.player2AvatarEmoji} ${match.player2Name}'),
-              const SizedBox(height: 24),
-              Text(
-                '対局画面は現在開発中です。もうしばらくお待ちください。',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
-              ),
-              const SizedBox(height: 24),
-              OutlinedButton(
-                onPressed: () => ref.read(multiplayerProvider.notifier).exitMatch(),
-                child: const Text('退出'),
-              ),
-            ],
-          ),
         ),
       ),
     );
