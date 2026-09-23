@@ -317,7 +317,7 @@ class MultiplayerNotifier extends StateNotifier<MultiplayerState> {
         .listen((snapshot) {
       final lobbies = snapshot.docs.map(OnlineLobby.fromSnapshot).toList();
       final onlineCount =
-          lobbies.fold<int>(0, (sum, lobby) => sum + lobby.playerCount);
+          lobbies.fold<int>(0, (total, lobby) => total + lobby.playerCount);
       state = state.copyWith(
         availableLobbies: lobbies,
         onlinePlayersCount: onlineCount,
