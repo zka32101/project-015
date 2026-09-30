@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../engine/local_notification_service.dart';
 import '../engine/preferences.dart';
 import '../engine/sound_manager.dart';
 import 'cloud_sync_screen.dart';
@@ -19,6 +20,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late int _aiMoveDelayMs;
   late bool _showPieceCount;
   late bool _autoSaveGames;
+  late bool _dailyReminderEnabled;
+  late int _dailyReminderHour;
+  late int _dailyReminderMinute;
 
   @override
   void initState() {
@@ -31,6 +35,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _aiMoveDelayMs = prefs.aiMoveDelayMs;
     _showPieceCount = prefs.showPieceCount;
     _autoSaveGames = prefs.autoSaveGames;
+    _dailyReminderEnabled = prefs.isDailyReminderEnabled;
+    _dailyReminderHour = prefs.dailyReminderHour;
+    _dailyReminderMinute = prefs.dailyReminderMinute;
   }
 
   @override
@@ -160,6 +167,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
           const Divider(),
+          // Notifications (local only, no server involved)
+          _SettingsSection(
+            title: '通知',
+            children: [
+              _SettingsTile(
+                title: 'デイリーリマインダー',
+                subtitle: _dailyReminderEnabled
+                    ? '毎日 ${_formatTime(_dailyReminderHour, _dailyReminderMinute)} に通知'
+                    : 'オフ',
+                value: _dailyReminderEnabled,
+                onChanged: _setDailyReminderEnabled,
+              ),
+              if (_dailyReminderEnabled)
+                ListTile(
+                  leading: const Icon(Icons.schedule),
+                  title: const Text('通知時刻'),
+                  subtitle: Text(_formatTime(_dailyReminderHour, _dailyReminderMinute)),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _pickReminderTime,
+                ),
+            ],
+          ),
+          const Divider(),
           // Data Settings
           _SettingsSection(
             title: 'データ',
@@ -192,6 +222,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  String _formatTime(int hour, int minute) {
+    return '$hour:${minute.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _setDailyReminderEnabled(bool value) async {
+    if (value) {
+      final granted = await LocalNotificationService().requestPermission();
+      if (!granted) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('通知の許可が必要です')),
+        );
+        return;
+      }
+      await LocalNotificationService().scheduleDailyReminder(
+        hour: _dailyReminderHour,
+        minute: _dailyReminderMinute,
+      );
+    } else {
+      await LocalNotificationService().cancelDailyReminder();
+    }
+    setState(() => _dailyReminderEnabled = value);
+    await AppPreferences().setDailyReminderEnabled(value);
+  }
+
+  Future<void> _pickReminderTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: _dailyReminderHour, minute: _dailyReminderMinute),
+    );
+    if (picked == null) return;
+
+    setState(() {
+      _dailyReminderHour = picked.hour;
+      _dailyReminderMinute = picked.minute;
+    });
+    await AppPreferences().setDailyReminderTime(picked.hour, picked.minute);
+    if (_dailyReminderEnabled) {
+      await LocalNotificationService().scheduleDailyReminder(
+        hour: picked.hour,
+        minute: picked.minute,
+      );
+    }
+  }
+
   void _showResetDialog() {
     showDialog(
       context: context,
@@ -206,6 +281,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TextButton(
             onPressed: () async {
               await AppPreferences().resetAll();
+              await LocalNotificationService().cancelDailyReminder();
               if (context.mounted) {
                 Navigator.pop(context);
                 setState(() {
@@ -216,6 +292,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _aiMoveDelayMs = 500;
                   _showPieceCount = true;
                   _autoSaveGames = true;
+                  _dailyReminderEnabled = false;
+                  _dailyReminderHour = 19;
+                  _dailyReminderMinute = 0;
                 });
               }
             },
