@@ -11,6 +11,9 @@ class AppPreferences {
   static const String showPieceCountKey = 'pref_show_piece_count';
   static const String autoSaveKey = 'pref_auto_save';
   static const String difficultyKey = 'pref_default_difficulty';
+  static const String dailyReminderEnabledKey = 'pref_daily_reminder_enabled';
+  static const String dailyReminderHourKey = 'pref_daily_reminder_hour';
+  static const String dailyReminderMinuteKey = 'pref_daily_reminder_minute';
 
   late SharedPreferences _prefs;
 
@@ -68,6 +71,19 @@ class AppPreferences {
   Future<void> setDefaultDifficulty(String difficulty) =>
       _prefs.setString(difficultyKey, difficulty);
 
+  // Daily reminder notification (fires locally, no server involved)
+  bool get isDailyReminderEnabled =>
+      _prefs.getBool(dailyReminderEnabledKey) ?? false;
+  Future<void> setDailyReminderEnabled(bool enabled) =>
+      _prefs.setBool(dailyReminderEnabledKey, enabled);
+
+  int get dailyReminderHour => _prefs.getInt(dailyReminderHourKey) ?? 19;
+  int get dailyReminderMinute => _prefs.getInt(dailyReminderMinuteKey) ?? 0;
+  Future<void> setDailyReminderTime(int hour, int minute) async {
+    await _prefs.setInt(dailyReminderHourKey, hour);
+    await _prefs.setInt(dailyReminderMinuteKey, minute);
+  }
+
   /// Reset all preferences to defaults
   Future<void> resetAll() async {
     await _prefs.remove(soundEnabledKey);
@@ -78,5 +94,8 @@ class AppPreferences {
     await _prefs.remove(showPieceCountKey);
     await _prefs.remove(autoSaveKey);
     await _prefs.remove(difficultyKey);
+    await _prefs.remove(dailyReminderEnabledKey);
+    await _prefs.remove(dailyReminderHourKey);
+    await _prefs.remove(dailyReminderMinuteKey);
   }
 }
