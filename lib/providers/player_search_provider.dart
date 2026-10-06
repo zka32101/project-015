@@ -1,8 +1,12 @@
+import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Searchable player profile
+/// Searchable player profile, read from the `publicProfiles` Firestore
+/// collection that CloudSyncNotifier publishes to (see
+/// lib/providers/cloud_sync_provider.dart).
 class SearchablePlayer {
   final String id;
   final String name;
@@ -32,6 +36,34 @@ class SearchablePlayer {
 
   bool get isActive =>
       DateTime.now().difference(lastActiveDate).inDays < 7;
+
+  factory SearchablePlayer.fromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data();
+    final rating = data['rankPoints'] as int? ?? 0;
+    return SearchablePlayer(
+      id: doc.id,
+      name: data['displayName'] as String? ?? '名無しさん',
+      // publicProfiles doesn't carry an avatar yet (that's a separate,
+      // purely-local customization feature) -- a generic emoji for every
+      // real player until it does.
+      avatarEmoji: '👤',
+      rating: rating,
+      totalWins: data['wins'] as int? ?? 0,
+      totalLosses: data['losses'] as int? ?? 0,
+      totalDraws: data['draws'] as int? ?? 0,
+      seasonalTier: _tierFromRating(rating),
+      lastActiveDate: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
+
+  static String _tierFromRating(int rating) {
+    if (rating >= 2700) return 'マスター';
+    if (rating >= 2300) return 'ダイヤモンド';
+    if (rating >= 1900) return 'プラチナ';
+    if (rating >= 1500) return 'ゴールド';
+    if (rating >= 1000) return 'シルバー';
+    return 'ブロンズ';
+  }
 }
 
 /// Player search state
@@ -41,6 +73,7 @@ class PlayerSearchState {
   final bool isLoading;
   final String? error;
   final List<SearchablePlayer> recentlyViewed;
+  final List<SearchablePlayer> topPlayers;
 
   const PlayerSearchState({
     required this.query,
@@ -48,6 +81,7 @@ class PlayerSearchState {
     this.isLoading = false,
     this.error,
     required this.recentlyViewed,
+    this.topPlayers = const [],
   });
 
   PlayerSearchState copyWith({
@@ -56,6 +90,7 @@ class PlayerSearchState {
     bool? isLoading,
     Object? error = _unset,
     List<SearchablePlayer>? recentlyViewed,
+    List<SearchablePlayer>? topPlayers,
   }) {
     return PlayerSearchState(
       query: query ?? this.query,
@@ -63,6 +98,7 @@ class PlayerSearchState {
       isLoading: isLoading ?? this.isLoading,
       error: identical(error, _unset) ? this.error : error as String?,
       recentlyViewed: recentlyViewed ?? this.recentlyViewed,
+      topPlayers: topPlayers ?? this.topPlayers,
     );
   }
 }
@@ -72,133 +108,69 @@ class PlayerSearchState {
 /// (clear the value).
 const Object _unset = Object();
 
-/// Notifier for player search
+/// Notifier for player search, backed by the real `publicProfiles`
+/// collection instead of a fixed local sample list.
+///
+/// Known limitation: Firestore can only do prefix matching efficiently
+/// (`displayName >= query AND displayName < query + ''`), not the
+/// free-form case-insensitive substring match the old fake data supported.
+/// A real "search anywhere in the name, any case" experience needs a
+/// dedicated search service (e.g. Algolia) indexing Firestore writes --
+/// out of scope here. Search is case-sensitive, start-of-name matching.
 class PlayerSearchNotifier extends StateNotifier<PlayerSearchState> {
-  static final List<SearchablePlayer> _samplePlayers = [
-    SearchablePlayer(
-      id: 'player_1',
-      name: 'エリート太郎',
-      avatarEmoji: '🦅',
-      rating: 2150,
-      totalWins: 234,
-      totalLosses: 45,
-      totalDraws: 12,
-      seasonalTier: 'ダイヤモンド',
-      lastActiveDate: DateTime.now().subtract(const Duration(hours: 2)),
-    ),
-    SearchablePlayer(
-      id: 'player_2',
-      name: 'リバーシ花子',
-      avatarEmoji: '🌸',
-      rating: 1890,
-      totalWins: 156,
-      totalLosses: 78,
-      totalDraws: 8,
-      seasonalTier: 'プラチナ',
-      lastActiveDate: DateTime.now().subtract(const Duration(hours: 5)),
-    ),
-    SearchablePlayer(
-      id: 'player_3',
-      name: '勝利の戦士',
-      avatarEmoji: '⚔️',
-      rating: 1720,
-      totalWins: 128,
-      totalLosses: 92,
-      totalDraws: 15,
-      seasonalTier: 'ゴールド',
-      lastActiveDate: DateTime.now().subtract(const Duration(hours: 12)),
-    ),
-    SearchablePlayer(
-      id: 'player_4',
-      name: 'スーパー次郎',
-      avatarEmoji: '🌟',
-      rating: 1650,
-      totalWins: 110,
-      totalLosses: 105,
-      totalDraws: 5,
-      seasonalTier: 'シルバー',
-      lastActiveDate: DateTime.now().subtract(const Duration(days: 1)),
-    ),
-    SearchablePlayer(
-      id: 'player_5',
-      name: 'リバーシマスター',
-      avatarEmoji: '👑',
-      rating: 2280,
-      totalWins: 267,
-      totalLosses: 38,
-      totalDraws: 18,
-      seasonalTier: 'マスター',
-      lastActiveDate: DateTime.now().subtract(const Duration(minutes: 30)),
-    ),
-    SearchablePlayer(
-      id: 'player_6',
-      name: '初心者君',
-      avatarEmoji: '🌱',
-      rating: 980,
-      totalWins: 25,
-      totalLosses: 45,
-      totalDraws: 3,
-      seasonalTier: 'ブロンズ',
-      lastActiveDate: DateTime.now().subtract(const Duration(days: 3)),
-    ),
-    SearchablePlayer(
-      id: 'player_7',
-      name: '強敵なり',
-      avatarEmoji: '🐉',
-      rating: 2050,
-      totalWins: 203,
-      totalLosses: 61,
-      totalDraws: 11,
-      seasonalTier: 'ダイヤモンド',
-      lastActiveDate: DateTime.now().subtract(const Duration(hours: 8)),
-    ),
-    SearchablePlayer(
-      id: 'player_8',
-      name: 'トレーニング中',
-      avatarEmoji: '💪',
-      rating: 1420,
-      totalWins: 89,
-      totalLosses: 71,
-      totalDraws: 6,
-      seasonalTier: 'シルバー',
-      lastActiveDate: DateTime.now().subtract(const Duration(days: 2)),
-    ),
-  ];
+  static const String _collection = 'publicProfiles';
 
-  PlayerSearchNotifier()
-      : super(const PlayerSearchState(
+  final FirebaseFirestore _firestore;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _topPlayersSub;
+
+  PlayerSearchNotifier({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        super(const PlayerSearchState(
           query: '',
           results: [],
           recentlyViewed: [],
-        ));
+        )) {
+    _watchTopPlayers();
+  }
+
+  void _watchTopPlayers() {
+    _topPlayersSub?.cancel();
+    _topPlayersSub = _firestore
+        .collection(_collection)
+        .orderBy('rankPoints', descending: true)
+        .limit(20)
+        .snapshots()
+        .listen((snapshot) {
+      state = state.copyWith(
+        topPlayers: snapshot.docs.map(SearchablePlayer.fromDoc).toList(),
+      );
+    });
+  }
 
   Future<void> searchPlayers(String query) async {
-    if (query.trim().isEmpty) {
-      state = state.copyWith(query: '', results: []);
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      state = state.copyWith(query: '', results: [], error: null);
       return;
     }
 
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(query: query, isLoading: true, error: null);
+    try {
+      final snapshot = await _firestore
+          .collection(_collection)
+          .orderBy('displayName')
+          .where('displayName', isGreaterThanOrEqualTo: trimmed)
+          .where('displayName', isLessThan: '$trimmed')
+          .limit(20)
+          .get();
 
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
+      final results = snapshot.docs.map(SearchablePlayer.fromDoc).toList()
+        ..sort((a, b) => b.rating.compareTo(a.rating));
 
-    final searchQuery = query.toLowerCase().trim();
-    final filtered = _samplePlayers
-        .where((player) =>
-            player.name.toLowerCase().contains(searchQuery) ||
-            player.id.toLowerCase().contains(searchQuery))
-        .toList();
-
-    // Sort by rating (descending)
-    filtered.sort((a, b) => b.rating.compareTo(a.rating));
-
-    state = state.copyWith(
-      query: query,
-      results: filtered,
-      isLoading: false,
-      error: null,
-    );
+      state = state.copyWith(results: results, isLoading: false);
+    } catch (_) {
+      state = state.copyWith(isLoading: false, error: '検索に失敗しました');
+    }
   }
 
   void clearSearch() {
@@ -219,20 +191,24 @@ class PlayerSearchNotifier extends StateNotifier<PlayerSearchState> {
     state = state.copyWith(recentlyViewed: []);
   }
 
+  /// A handful of real, currently-ranked players, shuffled. Not a true
+  /// random sample of every player -- just the top 20 by rankPoints,
+  /// shuffled -- since Firestore has no efficient uniform-random query
+  /// without extra denormalized fields.
   List<SearchablePlayer> getRandomPlayers({int count = 5}) {
-    final random = math.Random();
-    final shuffled = List<SearchablePlayer>.from(_samplePlayers)..shuffle(random);
+    final shuffled = List<SearchablePlayer>.from(state.topPlayers)..shuffle(math.Random());
     return shuffled.take(count).toList();
   }
 
   List<SearchablePlayer> getSuggestedPlayers() {
-    // Return top rated players not recently viewed
     final viewedIds = state.recentlyViewed.map((p) => p.id).toSet();
-    final suggested = _samplePlayers
-        .where((p) => !viewedIds.contains(p.id))
-        .toList();
-    suggested.sort((a, b) => b.rating.compareTo(a.rating));
-    return suggested.take(5).toList();
+    return state.topPlayers.where((p) => !viewedIds.contains(p.id)).take(5).toList();
+  }
+
+  @override
+  void dispose() {
+    _topPlayersSub?.cancel();
+    super.dispose();
   }
 }
 
