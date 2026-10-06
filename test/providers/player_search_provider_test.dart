@@ -1,101 +1,103 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+
 import 'package:reversia/providers/player_search_provider.dart';
+
+Future<void> _seedProfile(
+  FakeFirebaseFirestore firestore,
+  String uid, {
+  required String displayName,
+  required int rankPoints,
+  int wins = 0,
+  int losses = 0,
+  int draws = 0,
+}) {
+  return firestore.collection('publicProfiles').doc(uid).set({
+    'displayName': displayName,
+    'rankPoints': rankPoints,
+    'wins': wins,
+    'losses': losses,
+    'draws': draws,
+    'updatedAt': Timestamp.now(),
+  });
+}
 
 void main() {
   group('PlayerSearchNotifier', () {
-    late ProviderContainer container;
+    late FakeFirebaseFirestore firestore;
 
     setUp(() {
-      container = ProviderContainer();
+      firestore = FakeFirebaseFirestore();
     });
 
-    tearDown(() {
-      container.dispose();
+    test('watches the top players, sorted by rankPoints descending', () async {
+      await _seedProfile(firestore, 'a', displayName: 'あかり', rankPoints: 100);
+      await _seedProfile(firestore, 'b', displayName: 'ゆうと', rankPoints: 300);
+
+      final notifier = PlayerSearchNotifier(firestore: firestore);
+      await pumpEventQueue();
+
+      expect(notifier.state.topPlayers, hasLength(2));
+      expect(notifier.state.topPlayers[0].name, 'ゆうと');
+      expect(notifier.state.topPlayers[1].name, 'あかり');
     });
 
-    test('initial state has no query, no results, no recently viewed', () {
-      final state = container.read(playerSearchProvider);
-      expect(state.query, isEmpty);
-      expect(state.results, isEmpty);
-      expect(state.recentlyViewed, isEmpty);
-      expect(state.isLoading, isFalse);
-      expect(state.error, isNull);
+    test('searchPlayers finds real profiles by display-name prefix', () async {
+      await _seedProfile(firestore, 'a', displayName: 'さくら', rankPoints: 100, wins: 5, losses: 2);
+      await _seedProfile(firestore, 'b', displayName: 'さとし', rankPoints: 200);
+      await _seedProfile(firestore, 'c', displayName: 'ゆうと', rankPoints: 300);
+
+      final notifier = PlayerSearchNotifier(firestore: firestore);
+      await pumpEventQueue();
+
+      await notifier.searchPlayers('さ');
+
+      expect(notifier.state.isLoading, isFalse);
+      expect(notifier.state.error, isNull);
+      expect(notifier.state.results, hasLength(2));
+      expect(notifier.state.results.map((p) => p.name), containsAll(['さくら', 'さとし']));
+      final sakura = notifier.state.results.firstWhere((p) => p.name == 'さくら');
+      expect(sakura.totalWins, 5);
+      expect(sakura.totalLosses, 2);
     });
 
-    test('searchPlayers with empty query resets results', () async {
-      final notifier = container.read(playerSearchProvider.notifier);
-      await notifier.searchPlayers('太郎');
-      expect(container.read(playerSearchProvider).results, isNotEmpty);
+    test('searchPlayers with an empty query clears the results', () async {
+      await _seedProfile(firestore, 'a', displayName: 'さくら', rankPoints: 100);
+      final notifier = PlayerSearchNotifier(firestore: firestore);
+      await pumpEventQueue();
 
-      await notifier.searchPlayers('');
-      final state = container.read(playerSearchProvider);
-      expect(state.query, isEmpty);
-      expect(state.results, isEmpty);
-    });
+      await notifier.searchPlayers('さ');
+      expect(notifier.state.results, isNotEmpty);
 
-    test('searchPlayers matches by name substring', () async {
-      final notifier = container.read(playerSearchProvider.notifier);
-      await notifier.searchPlayers('太郎');
-
-      final state = container.read(playerSearchProvider);
-      expect(state.isLoading, isFalse);
-      expect(state.results, hasLength(1));
-      expect(state.results.single.name, 'エリート太郎');
-    });
-
-    test('searchPlayers matches by id', () async {
-      final notifier = container.read(playerSearchProvider.notifier);
-      await notifier.searchPlayers('player_2');
-
-      final state = container.read(playerSearchProvider);
-      expect(state.results, hasLength(1));
-      expect(state.results.single.id, 'player_2');
-    });
-
-    test('searchPlayers with no match returns empty results, not loading', () async {
-      final notifier = container.read(playerSearchProvider.notifier);
-      await notifier.searchPlayers('存在しないプレイヤー名前です');
-
-      final state = container.read(playerSearchProvider);
-      expect(state.results, isEmpty);
-      expect(state.isLoading, isFalse);
+      await notifier.searchPlayers('   ');
+      expect(notifier.state.results, isEmpty);
+      expect(notifier.state.query, isEmpty);
     });
 
     test('clearSearch resets query, results and error', () async {
-      final notifier = container.read(playerSearchProvider.notifier);
-      await notifier.searchPlayers('太郎');
+      await _seedProfile(firestore, 'a', displayName: 'さくら', rankPoints: 100);
+      final notifier = PlayerSearchNotifier(firestore: firestore);
+      await pumpEventQueue();
 
+      await notifier.searchPlayers('さ');
       notifier.clearSearch();
-      final state = container.read(playerSearchProvider);
-      expect(state.query, isEmpty);
-      expect(state.results, isEmpty);
-      expect(state.error, isNull);
+
+      expect(notifier.state.query, isEmpty);
+      expect(notifier.state.results, isEmpty);
+      expect(notifier.state.error, isNull);
     });
 
-    test('addToRecentlyViewed inserts at the front and dedupes by id', () {
-      final notifier = container.read(playerSearchProvider.notifier);
-      final players = notifier.getRandomPlayers(count: 2);
+    test('addToRecentlyViewed dedupes, orders most-recent-first, and caps at 10', () async {
+      final notifier = PlayerSearchNotifier(firestore: firestore);
+      await pumpEventQueue();
 
-      notifier.addToRecentlyViewed(players[0]);
-      notifier.addToRecentlyViewed(players[1]);
-      // Re-adding the first player should move it back to the front, not
-      // duplicate it.
-      notifier.addToRecentlyViewed(players[0]);
-
-      final recentlyViewed = container.read(playerSearchProvider).recentlyViewed;
-      expect(recentlyViewed, hasLength(2));
-      expect(recentlyViewed.first.id, players[0].id);
-    });
-
-    test('addToRecentlyViewed caps the list at 10 entries, evicting the oldest', () {
-      final notifier = container.read(playerSearchProvider.notifier);
       for (var i = 0; i < 11; i++) {
         notifier.addToRecentlyViewed(SearchablePlayer(
-          id: 'synthetic_$i',
-          name: 'Synthetic $i',
-          avatarEmoji: '🙂',
-          rating: 1000 + i,
+          id: 'p$i',
+          name: 'player$i',
+          avatarEmoji: '👤',
+          rating: 100,
           totalWins: 0,
           totalLosses: 0,
           totalDraws: 0,
@@ -103,40 +105,86 @@ void main() {
           lastActiveDate: DateTime.now(),
         ));
       }
+      // Re-view p5 -- should move to front, not duplicate.
+      notifier.addToRecentlyViewed(SearchablePlayer(
+        id: 'p5',
+        name: 'player5',
+        avatarEmoji: '👤',
+        rating: 100,
+        totalWins: 0,
+        totalLosses: 0,
+        totalDraws: 0,
+        seasonalTier: 'ブロンズ',
+        lastActiveDate: DateTime.now(),
+      ));
 
-      final recentlyViewed = container.read(playerSearchProvider).recentlyViewed;
-      expect(recentlyViewed, hasLength(10));
-      expect(recentlyViewed.first.id, 'synthetic_10');
-      expect(recentlyViewed.any((p) => p.id == 'synthetic_0'), isFalse);
+      expect(notifier.state.recentlyViewed, hasLength(10));
+      expect(notifier.state.recentlyViewed.first.id, 'p5');
+      expect(notifier.state.recentlyViewed.where((p) => p.id == 'p5'), hasLength(1));
     });
 
-    test('clearRecentlyViewed empties the list', () {
-      final notifier = container.read(playerSearchProvider.notifier);
-      final players = notifier.getRandomPlayers(count: 2);
-      for (final p in players) {
-        notifier.addToRecentlyViewed(p);
-      }
-      expect(container.read(playerSearchProvider).recentlyViewed, isNotEmpty);
+    test('clearRecentlyViewed empties the list', () async {
+      final notifier = PlayerSearchNotifier(firestore: firestore);
+      await pumpEventQueue();
 
+      notifier.addToRecentlyViewed(SearchablePlayer(
+        id: 'p1',
+        name: 'player1',
+        avatarEmoji: '👤',
+        rating: 100,
+        totalWins: 0,
+        totalLosses: 0,
+        totalDraws: 0,
+        seasonalTier: 'ブロンズ',
+        lastActiveDate: DateTime.now(),
+      ));
       notifier.clearRecentlyViewed();
-      expect(container.read(playerSearchProvider).recentlyViewed, isEmpty);
+
+      expect(notifier.state.recentlyViewed, isEmpty);
     });
 
-    test(
-        'getSuggestedPlayers excludes recently viewed and returns at most 5, '
-        'sorted by rating descending', () {
-      final notifier = container.read(playerSearchProvider.notifier);
-      final all = notifier.getRandomPlayers(count: 8);
-      final topRated = [...all]..sort((a, b) => b.rating.compareTo(a.rating));
-      notifier.addToRecentlyViewed(topRated.first);
+    test('getSuggestedPlayers excludes recently-viewed players', () async {
+      await _seedProfile(firestore, 'a', displayName: 'あかり', rankPoints: 100);
+      await _seedProfile(firestore, 'b', displayName: 'ゆうと', rankPoints: 300);
+      final notifier = PlayerSearchNotifier(firestore: firestore);
+      await pumpEventQueue();
+
+      notifier.addToRecentlyViewed(notifier.state.topPlayers.first);
 
       final suggested = notifier.getSuggestedPlayers();
+      expect(suggested.any((p) => p.id == notifier.state.topPlayers.first.id), isFalse);
+    });
 
-      expect(suggested.length, lessThanOrEqualTo(5));
-      expect(suggested.any((p) => p.id == topRated.first.id), isFalse);
-      for (var i = 1; i < suggested.length; i++) {
-        expect(suggested[i - 1].rating, greaterThanOrEqualTo(suggested[i].rating));
+    test('getRandomPlayers returns players drawn from the real top players', () async {
+      await _seedProfile(firestore, 'a', displayName: 'あかり', rankPoints: 100);
+      await _seedProfile(firestore, 'b', displayName: 'ゆうと', rankPoints: 300);
+      final notifier = PlayerSearchNotifier(firestore: firestore);
+      await pumpEventQueue();
+
+      final random = notifier.getRandomPlayers(count: 5);
+
+      expect(random.length, lessThanOrEqualTo(2));
+      for (final player in random) {
+        expect(notifier.state.topPlayers.map((p) => p.id), contains(player.id));
       }
+    });
+
+    test('derived SearchablePlayer fields compute correctly', () {
+      final player = SearchablePlayer(
+        id: 'a',
+        name: 'test',
+        avatarEmoji: '👤',
+        rating: 2800,
+        totalWins: 7,
+        totalLosses: 2,
+        totalDraws: 1,
+        seasonalTier: 'マスター',
+        lastActiveDate: DateTime.now(),
+      );
+
+      expect(player.totalGames, 10);
+      expect(player.winRate, 0.7);
+      expect(player.isActive, isTrue);
     });
   });
 }

@@ -201,6 +201,8 @@ class CloudSyncNotifier extends StateNotifier<CloudSyncState> {
     String? statisticsJson,
   ) async {
     var wins = 0;
+    var losses = 0;
+    var draws = 0;
     var totalGames = 0;
     var winStreak = 0;
     if (statisticsJson != null) {
@@ -208,6 +210,8 @@ class CloudSyncNotifier extends StateNotifier<CloudSyncState> {
         final stats =
             GameStatistics.fromJson(jsonDecode(statisticsJson) as Map<String, dynamic>);
         wins = stats.playerAWins;
+        losses = stats.playerBWins;
+        draws = stats.draws;
         totalGames = stats.totalGames;
         winStreak = stats.playerAWinStreak;
       } catch (_) {
@@ -220,6 +224,8 @@ class CloudSyncNotifier extends StateNotifier<CloudSyncState> {
       'displayName': _auth.currentUser?.displayName ?? '名無しさん',
       'rankPoints': rankPoints,
       'wins': wins,
+      'losses': losses,
+      'draws': draws,
       'totalGames': totalGames,
       'winStreak': winStreak,
       'updatedAt': Timestamp.fromDate(DateTime.now()),

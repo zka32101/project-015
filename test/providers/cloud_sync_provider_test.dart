@@ -91,7 +91,7 @@ void main() {
     test('restoreOrUploadFor also publishes a public leaderboard/search entry', () async {
       SharedPreferences.setMockInitialValues({
         'rank_points': 42,
-        'game_statistics': '{"totalGames":10,"playerAWins":7,"playerAWinStreak":3}',
+        'game_statistics': '{"totalGames":10,"playerAWins":7,"playerBWins":2,"draws":1,"playerAWinStreak":3}',
       });
       final prefs = await SharedPreferences.getInstance();
       final notifier = _buildNotifier(firestore, 'me', displayName: 'さくら');
@@ -103,6 +103,8 @@ void main() {
       expect(doc.data()!['displayName'], 'さくら');
       expect(doc.data()!['rankPoints'], 42);
       expect(doc.data()!['wins'], 7);
+      expect(doc.data()!['losses'], 2);
+      expect(doc.data()!['draws'], 1);
       expect(doc.data()!['totalGames'], 10);
       expect(doc.data()!['winStreak'], 3);
     });
