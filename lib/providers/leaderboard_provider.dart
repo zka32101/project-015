@@ -106,7 +106,7 @@ class LeaderboardState {
   double getPlayerAdvantageVsAverage() {
     if (playerEntry == null || entries.isEmpty) return 0;
     final avgRating =
-        entries.fold<double>(0, (sum, e) => sum + e.rating) / entries.length;
+        entries.fold<double>(0, (total, e) => total + e.rating) / entries.length;
     return ((playerEntry!.rating - avgRating) / avgRating * 100).clamp(-100, 100);
   }
 
