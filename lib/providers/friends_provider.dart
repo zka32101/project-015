@@ -1,229 +1,73 @@
-import 'dart:convert';
-import 'dart:math' as math;
+import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Online status of a friend
-enum FriendStatus {
-  online('オンライン'),
-  inGame('対局中'),
-  away('離席中'),
-  offline('オフライン');
-
-  final String label;
-  const FriendStatus(this.label);
-}
-
-/// Friend request direction
+/// Direction of a pending friend request relative to the signed-in player.
 enum FriendRequestDirection { incoming, outgoing }
 
-/// A single friend relationship
+/// A real friend, backed by `friends/{uid}/list/{friendUid}` (see
+/// firestore.rules). [rating] is a snapshot of the friend's rankPoints from
+/// when the friendship was formed -- it doesn't update live, since keeping
+/// it current would mean a separate publicProfiles subscription per friend.
+/// [isFavorite] is a purely local, per-device preference (not synced).
 class Friend {
   final String id;
   final String name;
-  final String avatarEmoji;
-  final FriendStatus status;
   final int rating;
-  final int winsAgainst;
-  final int lossesAgainst;
-  final int drawsAgainst;
   final DateTime addedDate;
-  final DateTime? lastPlayedDate;
   final bool isFavorite;
 
   const Friend({
     required this.id,
     required this.name,
-    required this.avatarEmoji,
-    required this.status,
     required this.rating,
-    this.winsAgainst = 0,
-    this.lossesAgainst = 0,
-    this.drawsAgainst = 0,
     required this.addedDate,
-    this.lastPlayedDate,
     this.isFavorite = false,
   });
 
-  int get totalGames => winsAgainst + lossesAgainst + drawsAgainst;
-
-  double get winRate => totalGames == 0 ? 0.0 : winsAgainst / totalGames;
-
-  Friend copyWith({
-    String? id,
-    String? name,
-    String? avatarEmoji,
-    FriendStatus? status,
-    int? rating,
-    int? winsAgainst,
-    int? lossesAgainst,
-    int? drawsAgainst,
-    DateTime? addedDate,
-    DateTime? lastPlayedDate,
-    bool? isFavorite,
-  }) {
-    return Friend(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      avatarEmoji: avatarEmoji ?? this.avatarEmoji,
-      status: status ?? this.status,
-      rating: rating ?? this.rating,
-      winsAgainst: winsAgainst ?? this.winsAgainst,
-      lossesAgainst: lossesAgainst ?? this.lossesAgainst,
-      drawsAgainst: drawsAgainst ?? this.drawsAgainst,
-      addedDate: addedDate ?? this.addedDate,
-      lastPlayedDate: lastPlayedDate ?? this.lastPlayedDate,
-      isFavorite: isFavorite ?? this.isFavorite,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'avatarEmoji': avatarEmoji,
-        'status': status.index,
-        'rating': rating,
-        'winsAgainst': winsAgainst,
-        'lossesAgainst': lossesAgainst,
-        'drawsAgainst': drawsAgainst,
-        'addedDate': addedDate.toIso8601String(),
-        'lastPlayedDate': lastPlayedDate?.toIso8601String(),
-        'isFavorite': isFavorite,
-      };
-
-  factory Friend.fromJson(Map<String, dynamic> json) => Friend(
-        id: json['id'],
-        name: json['name'],
-        avatarEmoji: json['avatarEmoji'],
-        status: FriendStatus.values[json['status']],
-        rating: json['rating'],
-        winsAgainst: json['winsAgainst'] ?? 0,
-        lossesAgainst: json['lossesAgainst'] ?? 0,
-        drawsAgainst: json['drawsAgainst'] ?? 0,
-        addedDate: DateTime.parse(json['addedDate']),
-        lastPlayedDate: json['lastPlayedDate'] != null
-            ? DateTime.parse(json['lastPlayedDate'])
-            : null,
-        isFavorite: json['isFavorite'] ?? false,
+  Friend copyWith({bool? isFavorite}) => Friend(
+        id: id,
+        name: name,
+        rating: rating,
+        addedDate: addedDate,
+        isFavorite: isFavorite ?? this.isFavorite,
       );
 }
 
-/// A pending friend request
+/// A pending friend request, backed by `friendRequests/{requestId}`.
 class FriendRequest {
   final String id;
+  final String otherUid;
   final String name;
-  final String avatarEmoji;
   final int rating;
   final FriendRequestDirection direction;
   final DateTime requestedDate;
 
   const FriendRequest({
     required this.id,
+    required this.otherUid,
     required this.name,
-    required this.avatarEmoji,
     required this.rating,
     required this.direction,
     required this.requestedDate,
   });
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'avatarEmoji': avatarEmoji,
-        'rating': rating,
-        'direction': direction.index,
-        'requestedDate': requestedDate.toIso8601String(),
-      };
-
-  factory FriendRequest.fromJson(Map<String, dynamic> json) => FriendRequest(
-        id: json['id'],
-        name: json['name'],
-        avatarEmoji: json['avatarEmoji'],
-        rating: json['rating'],
-        direction: FriendRequestDirection.values[json['direction']],
-        requestedDate: DateTime.parse(json['requestedDate']),
-      );
 }
 
-/// A social activity feed entry
-class ActivityEntry {
-  final String id;
-  final String friendName;
-  final String friendAvatarEmoji;
-  final String message;
-  final String emoji;
-  final DateTime timestamp;
-
-  const ActivityEntry({
-    required this.id,
-    required this.friendName,
-    required this.friendAvatarEmoji,
-    required this.message,
-    required this.emoji,
-    required this.timestamp,
-  });
-}
-
-/// A challenge sent between friends
-class FriendChallenge {
-  final String id;
-  final String friendId;
-  final String friendName;
-  final String friendAvatarEmoji;
-  final DateTime sentDate;
-  final bool isIncoming;
-  final bool isAccepted;
-  final bool isDeclined;
-
-  const FriendChallenge({
-    required this.id,
-    required this.friendId,
-    required this.friendName,
-    required this.friendAvatarEmoji,
-    required this.sentDate,
-    required this.isIncoming,
-    this.isAccepted = false,
-    this.isDeclined = false,
-  });
-
-  FriendChallenge copyWith({
-    bool? isAccepted,
-    bool? isDeclined,
-  }) {
-    return FriendChallenge(
-      id: id,
-      friendId: friendId,
-      friendName: friendName,
-      friendAvatarEmoji: friendAvatarEmoji,
-      sentDate: sentDate,
-      isIncoming: isIncoming,
-      isAccepted: isAccepted ?? this.isAccepted,
-      isDeclined: isDeclined ?? this.isDeclined,
-    );
-  }
-}
-
-/// Friends state
 class FriendsState {
   final List<Friend> friends;
   final List<FriendRequest> friendRequests;
-  final List<ActivityEntry> activityFeed;
-  final List<FriendChallenge> challenges;
   final bool isLoading;
   final String? error;
 
   const FriendsState({
     required this.friends,
     required this.friendRequests,
-    required this.activityFeed,
-    required this.challenges,
     this.isLoading = false,
     this.error,
   });
-
-  List<Friend> get onlineFriends =>
-      friends.where((f) => f.status != FriendStatus.offline).toList();
 
   int get incomingRequestCount => friendRequests
       .where((r) => r.direction == FriendRequestDirection.incoming)
@@ -232,374 +76,326 @@ class FriendsState {
   FriendsState copyWith({
     List<Friend>? friends,
     List<FriendRequest>? friendRequests,
-    List<ActivityEntry>? activityFeed,
-    List<FriendChallenge>? challenges,
     bool? isLoading,
-    String? error,
+    Object? error = _unset,
   }) {
     return FriendsState(
       friends: friends ?? this.friends,
       friendRequests: friendRequests ?? this.friendRequests,
-      activityFeed: activityFeed ?? this.activityFeed,
-      challenges: challenges ?? this.challenges,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: identical(error, _unset) ? this.error : error as String?,
     );
   }
 }
 
-/// Notifier for friends and social features
+const Object _unset = Object();
+
+/// Real friends: a request/accept flow plus a mutual friend list, backed by
+/// `friendRequests/{requestId}` and `friends/{uid}/list/{friendUid}`.
+///
+/// Deliberately scoped down from the old sample data's feature set -- no
+/// live online/away/in-game presence, no per-friend match history, no
+/// activity feed, no challenges. Those all need either a presence system
+/// or per-pair match history this client-only design doesn't have.
+///
+/// Accepting is a two-step handshake, since neither side can write into
+/// the other's friend list (see firestore.rules): the recipient flips the
+/// request's `status` to `accepted` and writes their own
+/// `friends/{me}/list/{sender}` entry; the sender's client is watching its
+/// own outgoing requests, notices the flip, writes
+/// `friends/{me}/list/{recipient}`, and deletes the now-fully-claimed
+/// request document.
 class FriendsNotifier extends StateNotifier<FriendsState> {
+  static const String _publicProfileCollection = 'publicProfiles';
+  static const String _requestsCollection = 'friendRequests';
+  static const String _friendsCollection = 'friends';
+  static const String _favoritesPrefsKey = 'friends_favorite_ids';
+
+  final FirebaseFirestore _firestore;
+  final FirebaseAuth _auth;
+
   SharedPreferences? _prefs;
-  static const _friendsKey = 'friends_list';
-  static const _requestsKey = 'friend_requests';
+  Set<String> _favoriteIds = {};
+  List<Friend> _friends = [];
+  List<FriendRequest> _incoming = [];
+  List<FriendRequest> _outgoingPending = [];
+  final Set<String> _claiming = {};
 
-  FriendsNotifier()
-      : super(const FriendsState(
-          friends: [],
-          friendRequests: [],
-          activityFeed: [],
-          challenges: [],
-        )) {
-    _initialize();
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _friendsSub;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _incomingSub;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _outgoingSub;
+
+  FriendsNotifier({FirebaseFirestore? firestore, FirebaseAuth? auth})
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = auth ?? FirebaseAuth.instance,
+        super(const FriendsState(friends: [], friendRequests: [])) {
+    _loadFavorites();
+    _watchAll();
   }
 
-  Future<void> _initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    _prefs = prefs;
-    _loadFriends(prefs);
-    _loadRequests(prefs);
-    _generateActivityFeed();
-    _generateChallenges();
+  Future<void> _loadFavorites() async {
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
+    _favoriteIds = (prefs.getStringList(_favoritesPrefsKey) ?? const []).toSet();
+    _applyFriends();
   }
 
-  void _loadFriends(SharedPreferences prefs) {
-    final stored = prefs.getStringList(_friendsKey);
-    if (stored != null && stored.isNotEmpty) {
-      final friends = stored
-          .map((s) => Friend.fromJson(jsonDecode(s) as Map<String, dynamic>))
-          .toList();
-      state = state.copyWith(friends: friends);
+  void _watchAll() {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+
+    _friendsSub = _firestore
+        .collection(_friendsCollection)
+        .doc(uid)
+        .collection('list')
+        .snapshots()
+        .listen((snapshot) {
+      _friends = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return Friend(
+          id: doc.id,
+          name: data['displayName'] as String? ?? '名無しさん',
+          rating: data['rankPoints'] as int? ?? 0,
+          addedDate: (data['addedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+        );
+      }).toList();
+      _applyFriends();
+    });
+
+    _incomingSub = _firestore
+        .collection(_requestsCollection)
+        .where('to', isEqualTo: uid)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .listen((snapshot) {
+      _incoming = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return FriendRequest(
+          id: doc.id,
+          otherUid: data['from'] as String,
+          name: data['fromDisplayName'] as String? ?? '名無しさん',
+          rating: data['fromRating'] as int? ?? 0,
+          direction: FriendRequestDirection.incoming,
+          requestedDate: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+        );
+      }).toList();
+      _applyRequests();
+    });
+
+    // My own outgoing requests, of any status: `pending` ones are shown in
+    // the UI; `accepted` ones mean the recipient claimed their half, so I
+    // claim mine and clean up the request doc.
+    _outgoingSub = _firestore
+        .collection(_requestsCollection)
+        .where('from', isEqualTo: uid)
+        .snapshots()
+        .listen((snapshot) {
+      final pending = <FriendRequest>[];
+      final accepted = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        if (data['status'] == 'accepted') {
+          accepted.add(doc);
+        } else if (data['status'] == 'pending') {
+          pending.add(FriendRequest(
+            id: doc.id,
+            otherUid: data['to'] as String,
+            name: data['toDisplayName'] as String? ?? '名無しさん',
+            rating: data['toRating'] as int? ?? 0,
+            direction: FriendRequestDirection.outgoing,
+            requestedDate: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+          ));
+        }
+      }
+      _outgoingPending = pending;
+      _applyRequests();
+      _claimAcceptedRequests(accepted);
+    });
+  }
+
+  Future<void> _claimAcceptedRequests(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> acceptedDocs,
+  ) async {
+    final me = _auth.currentUser;
+    if (me == null) return;
+
+    for (final doc in acceptedDocs) {
+      final data = doc.data();
+      final friendUid = data['to'] as String;
+      if (_claiming.contains(doc.id)) continue;
+      if (_friends.any((f) => f.id == friendUid)) continue;
+
+      _claiming.add(doc.id);
+      try {
+        await _firestore
+            .collection(_friendsCollection)
+            .doc(me.uid)
+            .collection('list')
+            .doc(friendUid)
+            .set({
+          'displayName': data['toDisplayName'] ?? '名無しさん',
+          'rankPoints': data['toRating'] ?? 0,
+          'addedAt': Timestamp.fromDate(DateTime.now()),
+        });
+        await _firestore.collection(_requestsCollection).doc(doc.id).delete();
+      } finally {
+        _claiming.remove(doc.id);
+      }
+    }
+  }
+
+  void _applyFriends() {
+    final friends =
+        _friends.map((f) => f.copyWith(isFavorite: _favoriteIds.contains(f.id))).toList();
+    state = state.copyWith(friends: friends);
+  }
+
+  void _applyRequests() {
+    state = state.copyWith(friendRequests: [..._incoming, ..._outgoingPending]);
+  }
+
+  /// Looks up a player by exact display name and sends them a friend
+  /// request. Known limitation: display names aren't unique, so this
+  /// matches whichever player registered that name first to sync.
+  Future<void> sendFriendRequest(String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    final me = _auth.currentUser;
+    if (me == null) {
+      state = state.copyWith(error: 'サインインが必要です');
       return;
     }
 
-    // Seed with sample friends for first run
-    final now = DateTime.now();
-    final sample = [
-      Friend(
-        id: 'friend_1',
-        name: 'あかり',
-        avatarEmoji: '🦊',
-        status: FriendStatus.online,
-        rating: 1420,
-        winsAgainst: 8,
-        lossesAgainst: 5,
-        drawsAgainst: 1,
-        addedDate: now.subtract(const Duration(days: 60)),
-        lastPlayedDate: now.subtract(const Duration(hours: 3)),
-        isFavorite: true,
-      ),
-      Friend(
-        id: 'friend_2',
-        name: 'ゆうと',
-        avatarEmoji: '🐻',
-        status: FriendStatus.inGame,
-        rating: 1650,
-        winsAgainst: 3,
-        lossesAgainst: 9,
-        drawsAgainst: 2,
-        addedDate: now.subtract(const Duration(days: 45)),
-        lastPlayedDate: now.subtract(const Duration(days: 1)),
-      ),
-      Friend(
-        id: 'friend_3',
-        name: 'さくら',
-        avatarEmoji: '🐧',
-        status: FriendStatus.offline,
-        rating: 1180,
-        winsAgainst: 12,
-        lossesAgainst: 4,
-        drawsAgainst: 0,
-        addedDate: now.subtract(const Duration(days: 20)),
-        lastPlayedDate: now.subtract(const Duration(days: 5)),
-      ),
-      Friend(
-        id: 'friend_4',
-        name: 'たける',
-        avatarEmoji: '🦁',
-        status: FriendStatus.away,
-        rating: 1990,
-        winsAgainst: 1,
-        lossesAgainst: 6,
-        drawsAgainst: 1,
-        addedDate: now.subtract(const Duration(days: 10)),
-        lastPlayedDate: now.subtract(const Duration(hours: 20)),
-      ),
-      Friend(
-        id: 'friend_5',
-        name: 'みお',
-        avatarEmoji: '🐰',
-        status: FriendStatus.online,
-        rating: 1340,
-        addedDate: now.subtract(const Duration(days: 2)),
-      ),
-    ];
+    state = state.copyWith(error: null);
+    try {
+      final matches = await _firestore
+          .collection(_publicProfileCollection)
+          .where('displayName', isEqualTo: trimmed)
+          .limit(1)
+          .get();
+      if (matches.docs.isEmpty) {
+        state = state.copyWith(error: 'プレイヤーが見つかりませんでした');
+        return;
+      }
 
-    state = state.copyWith(friends: sample);
-    _persistFriends();
-  }
+      final target = matches.docs.first;
+      final targetUid = target.id;
+      if (targetUid == me.uid) {
+        state = state.copyWith(error: '自分自身にはフレンド申請できません');
+        return;
+      }
+      if (_friends.any((f) => f.id == targetUid)) {
+        state = state.copyWith(error: 'すでにフレンドです');
+        return;
+      }
 
-  void _loadRequests(SharedPreferences prefs) {
-    final stored = prefs.getStringList(_requestsKey);
-    if (stored != null && stored.isNotEmpty) {
-      final requests = stored
-          .map((s) =>
-              FriendRequest.fromJson(jsonDecode(s) as Map<String, dynamic>))
-          .toList();
-      state = state.copyWith(friendRequests: requests);
-      return;
+      final asSender = await _firestore
+          .collection(_requestsCollection)
+          .where('from', isEqualTo: me.uid)
+          .where('to', isEqualTo: targetUid)
+          .where('status', isEqualTo: 'pending')
+          .limit(1)
+          .get();
+      final asRecipient = await _firestore
+          .collection(_requestsCollection)
+          .where('from', isEqualTo: targetUid)
+          .where('to', isEqualTo: me.uid)
+          .where('status', isEqualTo: 'pending')
+          .limit(1)
+          .get();
+      if (asSender.docs.isNotEmpty || asRecipient.docs.isNotEmpty) {
+        state = state.copyWith(error: 'すでに申請済みです');
+        return;
+      }
+
+      final myProfile =
+          await _firestore.collection(_publicProfileCollection).doc(me.uid).get();
+      final targetData = target.data();
+
+      await _firestore.collection(_requestsCollection).add({
+        'from': me.uid,
+        'to': targetUid,
+        'fromDisplayName': me.displayName ?? '名無しさん',
+        'fromRating': myProfile.data()?['rankPoints'] as int? ?? 0,
+        'toDisplayName': targetData['displayName'] as String? ?? '名無しさん',
+        'toRating': targetData['rankPoints'] as int? ?? 0,
+        'status': 'pending',
+        'createdAt': Timestamp.fromDate(DateTime.now()),
+      });
+    } catch (_) {
+      state = state.copyWith(error: '申請の送信に失敗しました');
     }
-
-    final now = DateTime.now();
-    final sample = [
-      FriendRequest(
-        id: 'req_1',
-        name: 'はると',
-        avatarEmoji: '🦉',
-        rating: 1290,
-        direction: FriendRequestDirection.incoming,
-        requestedDate: now.subtract(const Duration(hours: 5)),
-      ),
-      FriendRequest(
-        id: 'req_2',
-        name: 'りん',
-        avatarEmoji: '🐼',
-        rating: 1510,
-        direction: FriendRequestDirection.incoming,
-        requestedDate: now.subtract(const Duration(days: 1)),
-      ),
-    ];
-
-    state = state.copyWith(friendRequests: sample);
-    _persistRequests();
-  }
-
-  void _generateActivityFeed() {
-    final now = DateTime.now();
-    final friends = state.friends;
-    if (friends.isEmpty) return;
-
-    final entries = <ActivityEntry>[
-      ActivityEntry(
-        id: 'activity_1',
-        friendName: friends[0].name,
-        friendAvatarEmoji: friends[0].avatarEmoji,
-        message: 'レーティング1400に到達しました',
-        emoji: '📈',
-        timestamp: now.subtract(const Duration(hours: 2)),
-      ),
-      if (friends.length > 1)
-        ActivityEntry(
-          id: 'activity_2',
-          friendName: friends[1].name,
-          friendAvatarEmoji: friends[1].avatarEmoji,
-          message: 'AI(エキスパート)に勝利しました',
-          emoji: '🏆',
-          timestamp: now.subtract(const Duration(hours: 6)),
-        ),
-      if (friends.length > 2)
-        ActivityEntry(
-          id: 'activity_3',
-          friendName: friends[2].name,
-          friendAvatarEmoji: friends[2].avatarEmoji,
-          message: '新しいバッジ「連勝王」を獲得しました',
-          emoji: '🎖️',
-          timestamp: now.subtract(const Duration(days: 1)),
-        ),
-      if (friends.length > 3)
-        ActivityEntry(
-          id: 'activity_4',
-          friendName: friends[3].name,
-          friendAvatarEmoji: friends[3].avatarEmoji,
-          message: '週間目標を達成しました',
-          emoji: '✅',
-          timestamp: now.subtract(const Duration(days: 2)),
-        ),
-    ];
-
-    state = state.copyWith(activityFeed: entries);
-  }
-
-  void _generateChallenges() {
-    final friends = state.friends;
-    if (friends.length < 2) return;
-
-    final now = DateTime.now();
-    final challenges = [
-      FriendChallenge(
-        id: 'challenge_1',
-        friendId: friends[1].id,
-        friendName: friends[1].name,
-        friendAvatarEmoji: friends[1].avatarEmoji,
-        sentDate: now.subtract(const Duration(hours: 4)),
-        isIncoming: true,
-      ),
-    ];
-
-    state = state.copyWith(challenges: challenges);
-  }
-
-  Future<void> _persistFriends() async {
-    final prefs = _prefs ??= await SharedPreferences.getInstance();
-    final encoded =
-        state.friends.map((f) => jsonEncode(f.toJson())).toList();
-    await prefs.setStringList(_friendsKey, encoded);
-  }
-
-  Future<void> _persistRequests() async {
-    final prefs = _prefs ??= await SharedPreferences.getInstance();
-    final encoded =
-        state.friendRequests.map((r) => jsonEncode(r.toJson())).toList();
-    await prefs.setStringList(_requestsKey, encoded);
-  }
-
-  Future<void> toggleFavorite(String friendId) async {
-    final updated = state.friends
-        .map((f) =>
-            f.id == friendId ? f.copyWith(isFavorite: !f.isFavorite) : f)
-        .toList();
-    state = state.copyWith(friends: updated);
-    await _persistFriends();
-  }
-
-  Future<void> removeFriend(String friendId) async {
-    final updated = state.friends.where((f) => f.id != friendId).toList();
-    state = state.copyWith(friends: updated);
-    await _persistFriends();
   }
 
   Future<void> acceptRequest(FriendRequest request) async {
+    final me = _auth.currentUser;
+    if (me == null) return;
     try {
-      final newFriend = Friend(
-        id: 'friend_${DateTime.now().millisecondsSinceEpoch}',
-        name: request.name,
-        avatarEmoji: request.avatarEmoji,
-        status: FriendStatus.online,
-        rating: request.rating,
-        addedDate: DateTime.now(),
-      );
-
-      final updatedFriends = [...state.friends, newFriend];
-      final updatedRequests =
-          state.friendRequests.where((r) => r.id != request.id).toList();
-
-      state = state.copyWith(
-        friends: updatedFriends,
-        friendRequests: updatedRequests,
-      );
-
-      await _persistFriends();
-      await _persistRequests();
-    } catch (e) {
-      state = state.copyWith(error: 'Failed to accept request: $e');
+      await _firestore.collection(_requestsCollection).doc(request.id).update({
+        'status': 'accepted',
+      });
+      await _firestore
+          .collection(_friendsCollection)
+          .doc(me.uid)
+          .collection('list')
+          .doc(request.otherUid)
+          .set({
+        'displayName': request.name,
+        'rankPoints': request.rating,
+        'addedAt': Timestamp.fromDate(DateTime.now()),
+      });
+    } catch (_) {
+      state = state.copyWith(error: 'フレンド申請の承認に失敗しました');
     }
   }
 
   Future<void> declineRequest(FriendRequest request) async {
     try {
-      final updatedRequests =
-          state.friendRequests.where((r) => r.id != request.id).toList();
-      state = state.copyWith(friendRequests: updatedRequests);
-      await _persistRequests();
-    } catch (e) {
-      state = state.copyWith(error: 'Failed to decline request: $e');
+      await _firestore.collection(_requestsCollection).doc(request.id).delete();
+    } catch (_) {
+      state = state.copyWith(error: 'フレンド申請の拒否に失敗しました');
     }
   }
 
-  Future<void> sendFriendRequest(String name) async {
-    if (name.trim().isEmpty) return;
+  Future<void> toggleFavorite(String friendId) async {
+    if (_favoriteIds.contains(friendId)) {
+      _favoriteIds.remove(friendId);
+    } else {
+      _favoriteIds.add(friendId);
+    }
+    _applyFriends();
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
+    await prefs.setStringList(_favoritesPrefsKey, _favoriteIds.toList());
+  }
 
+  Future<void> removeFriend(String friendId) async {
+    final me = _auth.currentUser;
+    if (me == null) return;
     try {
-      final emojis = ['🦊', '🐻', '🐧', '🦁', '🐰', '🦉', '🐼', '🐨', '🐯', '🐸'];
-      final random = math.Random();
-
-      final request = FriendRequest(
-        id: 'req_${DateTime.now().millisecondsSinceEpoch}',
-        name: name.trim(),
-        avatarEmoji: emojis[random.nextInt(emojis.length)],
-        rating: 1000 + random.nextInt(1000),
-        direction: FriendRequestDirection.outgoing,
-        requestedDate: DateTime.now(),
-      );
-
-      state = state.copyWith(
-        friendRequests: [...state.friendRequests, request],
-      );
-      await _persistRequests();
-    } catch (e) {
-      state = state.copyWith(error: 'Failed to send request: $e');
+      await _firestore
+          .collection(_friendsCollection)
+          .doc(me.uid)
+          .collection('list')
+          .doc(friendId)
+          .delete();
+    } catch (_) {
+      state = state.copyWith(error: 'フレンドの削除に失敗しました');
     }
   }
 
-  Future<void> sendChallenge(Friend friend) async {
-    try {
-      final challenge = FriendChallenge(
-        id: 'challenge_${DateTime.now().millisecondsSinceEpoch}',
-        friendId: friend.id,
-        friendName: friend.name,
-        friendAvatarEmoji: friend.avatarEmoji,
-        sentDate: DateTime.now(),
-        isIncoming: false,
-      );
-
-      state = state.copyWith(challenges: [challenge, ...state.challenges]);
-    } catch (e) {
-      state = state.copyWith(error: 'Failed to send challenge: $e');
-    }
+  void clearError() {
+    state = state.copyWith(error: null);
   }
 
-  Future<void> respondToChallenge(
-    FriendChallenge challenge, {
-    required bool accept,
-  }) async {
-    try {
-      final updated = state.challenges
-          .map((c) => c.id == challenge.id
-              ? c.copyWith(isAccepted: accept, isDeclined: !accept)
-              : c)
-          .toList();
-      state = state.copyWith(challenges: updated);
-    } catch (e) {
-      state = state.copyWith(error: 'Failed to respond to challenge: $e');
-    }
-  }
-
-  Future<void> recordMatchResult(
-    String friendId, {
-    required bool won,
-    required bool draw,
-  }) async {
-    try {
-      final updated = state.friends.map((f) {
-        if (f.id != friendId) return f;
-        return f.copyWith(
-          winsAgainst: f.winsAgainst + (won && !draw ? 1 : 0),
-          lossesAgainst: f.lossesAgainst + (!won && !draw ? 1 : 0),
-          drawsAgainst: f.drawsAgainst + (draw ? 1 : 0),
-          lastPlayedDate: DateTime.now(),
-        );
-      }).toList();
-
-      state = state.copyWith(friends: updated);
-      await _persistFriends();
-    } catch (e) {
-      state = state.copyWith(error: 'Failed to record match: $e');
-    }
+  @override
+  void dispose() {
+    _friendsSub?.cancel();
+    _incomingSub?.cancel();
+    _outgoingSub?.cancel();
+    super.dispose();
   }
 }
 
-/// Riverpod provider for friends and social features
-final friendsProvider =
-    StateNotifierProvider<FriendsNotifier, FriendsState>(
+/// Riverpod provider for friends
+final friendsProvider = StateNotifierProvider<FriendsNotifier, FriendsState>(
   (ref) => FriendsNotifier(),
 );

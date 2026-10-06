@@ -475,45 +475,29 @@ class _PlayerDetailDialog extends ConsumerWidget {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: () {
-                      ref
-                          .read(friends_provider.friendsProvider.notifier)
-                          .sendFriendRequest(player.name);
+                    onPressed: () async {
+                      final notifier =
+                          ref.read(friends_provider.friendsProvider.notifier);
+                      final messenger = ScaffoldMessenger.of(context);
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      await notifier.sendFriendRequest(player.name);
+                      final error = notifier.state.error;
+                      messenger.showSnackBar(
                         SnackBar(
-                          content: Text('${player.name}にフレンド申請を送信しました'),
+                          content: Text(
+                            error ?? '${player.name}にフレンド申請を送信しました',
+                          ),
                         ),
                       );
+                      if (error != null) notifier.clearError();
                     },
                     child: const Text('フレンド申請を送る'),
                   ),
                 )
               else
-                SizedBox(
+                const SizedBox(
                   width: double.infinity,
-                  child: FilledButton.tonal(
-                    onPressed: () {
-                      ref
-                          .read(friends_provider.friendsProvider.notifier)
-                          .sendChallenge(friends_provider.Friend(
-                            id: player.id,
-                            name: player.name,
-                            avatarEmoji: player.avatarEmoji,
-                            status:
-                                friends_provider.FriendStatus.online,
-                            rating: player.rating,
-                            addedDate: DateTime.now(),
-                          ));
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${player.name}に対戦を申し込みました'),
-                        ),
-                      );
-                    },
-                    child: const Text('対戦を申し込む'),
-                  ),
+                  child: Center(child: Text('すでにフレンドです')),
                 ),
               const SizedBox(height: 12),
               SizedBox(
