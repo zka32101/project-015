@@ -382,6 +382,11 @@ class FriendsNotifier extends StateNotifier<FriendsState> {
     }
   }
 
+  /// The current error, if any -- a public accessor so callers (e.g. a
+  /// dialog that just awaited an action) can check the result without
+  /// reaching into the protected [state] directly.
+  String? get error => state.error;
+
   void clearError() {
     state = state.copyWith(error: null);
   }

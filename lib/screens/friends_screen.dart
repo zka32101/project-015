@@ -14,7 +14,7 @@ Future<void> _runAndReportError(
   final messenger = ScaffoldMessenger.of(context);
   final notifier = ref.read(friendsProvider.notifier);
   await action();
-  final error = notifier.state.error;
+  final error = notifier.error;
   if (error != null) {
     messenger.showSnackBar(SnackBar(content: Text(error)));
     notifier.clearError();
@@ -92,7 +92,7 @@ class FriendsScreen extends ConsumerWidget {
               final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(context);
               await notifier.sendFriendRequest(name);
-              final error = notifier.state.error;
+              final error = notifier.error;
               messenger.showSnackBar(
                 SnackBar(content: Text(error ?? '$nameに申請を送りました')),
               );

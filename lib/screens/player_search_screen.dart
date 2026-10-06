@@ -481,7 +481,7 @@ class _PlayerDetailDialog extends ConsumerWidget {
                       final messenger = ScaffoldMessenger.of(context);
                       Navigator.pop(context);
                       await notifier.sendFriendRequest(player.name);
-                      final error = notifier.state.error;
+                      final error = notifier.error;
                       messenger.showSnackBar(
                         SnackBar(
                           content: Text(
