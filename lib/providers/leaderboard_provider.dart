@@ -1,7 +1,8 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
 
-import 'game_analytics_provider.dart';
-import 'player_profile_provider.dart' hide gameAnalyticsProvider;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Player leaderboard entry
 class LeaderboardEntry {
@@ -113,160 +114,103 @@ class LeaderboardState {
   LeaderboardState copyWith({
     List<LeaderboardEntry>? entries,
     LeaderboardPeriod? period,
-    int? playerRank,
-    LeaderboardEntry? playerEntry,
+    Object? playerRank = _unset,
+    Object? playerEntry = _unset,
     bool? isLoading,
-    String? error,
+    Object? error = _unset,
   }) {
     return LeaderboardState(
       entries: entries ?? this.entries,
       period: period ?? this.period,
-      playerRank: playerRank ?? this.playerRank,
-      playerEntry: playerEntry ?? this.playerEntry,
+      playerRank: identical(playerRank, _unset) ? this.playerRank : playerRank as int?,
+      playerEntry: identical(playerEntry, _unset)
+          ? this.playerEntry
+          : playerEntry as LeaderboardEntry?,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: identical(error, _unset) ? this.error : error as String?,
     );
   }
 }
 
-/// Notifier for leaderboard
+const Object _unset = Object();
+
+/// Notifier for the leaderboard, backed by the `publicProfiles` Firestore
+/// collection that CloudSyncNotifier publishes to on each sync (see
+/// lib/providers/cloud_sync_provider.dart). Real rank points, wins, games
+/// and win streak for every player who has ever signed in and synced --
+/// no more locally-fabricated rival players.
+///
+/// Two known limitations, kept out of scope here:
+/// - Per-period leaderboards (today/this week/this month) would need
+///   server-side aggregation this client-only design doesn't have, so
+///   [setPeriod] only relabels the same all-time ranking.
+/// - A player's entry only reflects their *last sync*, not every game
+///   played since -- publicProfiles is written on sync, not on every move.
 class LeaderboardNotifier extends StateNotifier<LeaderboardState> {
-  final GameAnalyticsState analytics;
-  final PlayerProfile? playerProfile;
+  static const String _collection = 'publicProfiles';
 
-  LeaderboardNotifier(this.analytics, this.playerProfile)
-      : super(_buildState(analytics, playerProfile, LeaderboardPeriod.allTime)) {
-    _initializeLeaderboard();
+  final FirebaseFirestore _firestore;
+  final FirebaseAuth _auth;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _sub;
+
+  LeaderboardNotifier({FirebaseFirestore? firestore, FirebaseAuth? auth})
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = auth ?? FirebaseAuth.instance,
+        super(const LeaderboardState(
+          entries: [],
+          period: LeaderboardPeriod.allTime,
+          isLoading: true,
+        )) {
+    _watchLeaderboard();
   }
 
-  /// Initialize leaderboard
-  void _initializeLeaderboard() {
-    // In a real app, this would fetch from a backend
-    // For now, we generate simulated leaderboard data
-  }
+  void _watchLeaderboard() {
+    _sub?.cancel();
+    _sub = _firestore
+        .collection(_collection)
+        .orderBy('rankPoints', descending: true)
+        .limit(100)
+        .snapshots()
+        .listen((snapshot) {
+      final entries = <LeaderboardEntry>[
+        for (var i = 0; i < snapshot.docs.length; i++) _entryFromDoc(snapshot.docs[i], i + 1),
+      ];
 
-  /// Build leaderboard state
-  static LeaderboardState _buildState(
-    GameAnalyticsState analytics,
-    PlayerProfile? playerProfile,
-    LeaderboardPeriod period,
-  ) {
-    // Generate simulated leaderboard entries
-    final entries = _generateLeaderboardEntries(analytics, period);
+      final myUid = _auth.currentUser?.uid;
+      final myIndex = myUid == null ? -1 : entries.indexWhere((e) => e.playerId == myUid);
 
-    // Find player rank if profile exists
-    int? playerRank;
-    LeaderboardEntry? playerEntry;
-
-    if (playerProfile != null) {
-      final playerRating =
-          _calculatePlayerRating(playerProfile, analytics);
-      playerEntry = LeaderboardEntry(
-        playerId: 'current_player',
-        playerName: 'あなた',
-        rank: 0, // Will be set below
-        rating: playerRating,
-        wins: playerProfile.wins,
-        totalGames: playerProfile.totalGames,
-        winRate: playerProfile.winRate,
-        streak: playerProfile.currentStreak,
-        skillLevel: playerProfile.skillLevel,
-        lastPlayedAt: DateTime.now(),
+      state = state.copyWith(
+        entries: entries,
+        playerRank: myIndex == -1 ? null : myIndex + 1,
+        playerEntry: myIndex == -1 ? null : entries[myIndex],
+        isLoading: false,
       );
+    }, onError: (_) {
+      state = state.copyWith(isLoading: false, error: 'ランキングの取得に失敗しました');
+    });
+  }
 
-      // Find player's rank
-      for (int i = 0; i < entries.length; i++) {
-        if (entries[i].rating <= playerRating) {
-          playerRank = i + 1;
-          playerEntry = playerEntry!.copyWith(rank: playerRank);
-          break;
-        }
-      }
+  LeaderboardEntry _entryFromDoc(
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+    int rank,
+  ) {
+    final data = doc.data();
+    final wins = data['wins'] as int? ?? 0;
+    final totalGames = data['totalGames'] as int? ?? 0;
+    final rating = (data['rankPoints'] as num?)?.toDouble() ?? 0;
 
-      // If player is at bottom, assign last rank
-      if (playerRank == null) {
-        playerRank = entries.length + 1;
-        playerEntry = playerEntry!.copyWith(rank: playerRank);
-      }
-    }
-
-    return LeaderboardState(
-      entries: entries,
-      period: period,
-      playerRank: playerRank,
-      playerEntry: playerEntry,
-      isLoading: false,
+    return LeaderboardEntry(
+      playerId: doc.id,
+      playerName: data['displayName'] as String? ?? '名無しさん',
+      rank: rank,
+      rating: rating,
+      wins: wins,
+      totalGames: totalGames,
+      winRate: totalGames > 0 ? wins / totalGames : 0.0,
+      streak: data['winStreak'] as int? ?? 0,
+      skillLevel: _getSkillLevelFromRating(rating),
+      lastPlayedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
-  }
-
-  /// Generate simulated leaderboard entries
-  static List<LeaderboardEntry> _generateLeaderboardEntries(
-    GameAnalyticsState analytics,
-    LeaderboardPeriod period,
-  ) {
-    final entries = <LeaderboardEntry>[];
-
-    // Generate top 100 simulated players
-    final baseWinRate = analytics.overallWinRate;
-    final baseGames = analytics.totalGamesAnalyzed;
-
-    for (int i = 0; i < 100; i++) {
-      final variance = (i * 0.5);
-      final rating = ((3000 - (i * 25)) - variance).clamp(100, 3000).toDouble();
-      final winRate = (baseWinRate - (i * 0.003)).clamp(0.2, 0.9);
-      final games = (baseGames + (100 - i) * 10).toInt();
-      final wins = (games * winRate).toInt();
-
-      entries.add(LeaderboardEntry(
-        playerId: 'player_$i',
-        playerName: _generatePlayerName(i),
-        rank: i + 1,
-        rating: rating,
-        wins: wins,
-        totalGames: games,
-        winRate: winRate,
-        streak: (20 - (i % 10)).clamp(0, 20),
-        skillLevel: _getSkillLevelFromRating(rating),
-        lastPlayedAt: DateTime.now().subtract(
-          Duration(days: (i % 30)),
-        ),
-      ));
-    }
-
-    return entries;
-  }
-
-  /// Calculate player rating based on profile and analytics
-  static double _calculatePlayerRating(
-    PlayerProfile profile,
-    GameAnalyticsState analytics,
-  ) {
-    // Rating formula: base on wins, win rate, and game diversity
-    final winBonus = profile.wins * 10;
-    final rateBonus = profile.winRate * 1000;
-    final consistencyBonus = analytics.totalGamesAnalyzed > 50 ? 200 : 0;
-    final streakBonus = profile.currentStreak * 20;
-
-    return (winBonus + rateBonus + consistencyBonus + streakBonus)
-        .clamp(100, 3000)
-        .toDouble();
-  }
-
-  /// Generate player name
-  static String _generatePlayerName(int index) {
-    final names = [
-      'リバーシマスター',
-      'ビッグプレイヤー',
-      'スマートプレイ',
-      'ウィニング戦略',
-      'パワープレイヤー',
-      'チャンピオン',
-      'ナイトレイダー',
-      'アイスブレイカー',
-      'ロックスター',
-      'ファイアスター',
-    ];
-    return '${names[index % names.length]}_${index + 1}';
   }
 
   /// Get skill level from rating
@@ -278,45 +222,22 @@ class LeaderboardNotifier extends StateNotifier<LeaderboardState> {
     return 'ビギナー';
   }
 
-  /// Change leaderboard period
+  /// Change leaderboard period. See the class doc -- this only relabels
+  /// the same all-time ranking, since per-period aggregation isn't
+  /// supported yet.
   void setPeriod(LeaderboardPeriod period) {
-    state = _buildState(analytics, playerProfile, period);
+    state = state.copyWith(period: period);
   }
-}
 
-extension _LeaderboardEntryCopyWith on LeaderboardEntry {
-  LeaderboardEntry copyWith({
-    String? playerId,
-    String? playerName,
-    int? rank,
-    double? rating,
-    int? wins,
-    int? totalGames,
-    double? winRate,
-    int? streak,
-    String? skillLevel,
-    DateTime? lastPlayedAt,
-  }) {
-    return LeaderboardEntry(
-      playerId: playerId ?? this.playerId,
-      playerName: playerName ?? this.playerName,
-      rank: rank ?? this.rank,
-      rating: rating ?? this.rating,
-      wins: wins ?? this.wins,
-      totalGames: totalGames ?? this.totalGames,
-      winRate: winRate ?? this.winRate,
-      streak: streak ?? this.streak,
-      skillLevel: skillLevel ?? this.skillLevel,
-      lastPlayedAt: lastPlayedAt ?? this.lastPlayedAt,
-    );
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
   }
 }
 
 /// Riverpod provider for leaderboard
 final leaderboardProvider =
     StateNotifierProvider<LeaderboardNotifier, LeaderboardState>((ref) {
-  final analytics = ref.watch(gameAnalyticsProvider);
-  final playerProfile = ref.watch(playerProfileProvider).profile;
-
-  return LeaderboardNotifier(analytics, playerProfile);
+  return LeaderboardNotifier();
 });

@@ -71,5 +71,43 @@ service cloud.firestore {
     match /userProgress/{uid} {
       allow read, write: if isSignedIn() && request.auth.uid == uid;
     }
+
+    // Public leaderboard/search entry (lib/providers/cloud_sync_provider.dart
+    // upload path, read by leaderboard_provider.dart and
+    // player_search_provider.dart). Deliberately minimal fields only --
+    // never the backup blob above -- so it's safe to read without
+    // requiring sign-in; only the owner may write their own.
+    match /publicProfiles/{uid} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Friend requests (lib/providers/friends_provider.dart). Either side
+    // may read; only the sender may create one; only the recipient may
+    // change its status (accept); either side may delete (decline, cancel,
+    // or clean up once accepted).
+    match /friendRequests/{requestId} {
+      allow read: if isSignedIn()
+          && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+
+      allow create: if isSignedIn() && request.resource.data.from == request.auth.uid;
+
+      allow update: if isSignedIn()
+          && resource.data.to == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+
+      allow delete: if isSignedIn()
+          && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+    }
+
+    // Each player's own friend list (lib/providers/friends_provider.dart).
+    // Always written by its own owner -- when B accepts A's request, B
+    // writes their own friends/{B}/list/{A}; A's client separately writes
+    // friends/{A}/list/{B} once it sees the request's status turn to
+    // 'accepted'. No cross-uid writes needed, unlike the lobby/queue claim
+    // pattern above.
+    match /friends/{uid}/list/{friendUid} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
+    }
   }
 }

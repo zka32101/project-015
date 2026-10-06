@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/game_record.dart';
+import '../engine/statistics.dart';
 import '../viewmodels/game_view_model.dart'
     show gameStatisticsPrefsKey, gameSessionHistoryPrefsKey, rankPointsPrefsKey;
 
@@ -63,6 +66,7 @@ const Object _unset = Object();
 /// since the last sync is a genuinely hard problem and out of scope here.
 class CloudSyncNotifier extends StateNotifier<CloudSyncState> {
   static const String _collection = 'userProgress';
+  static const String _publicProfileCollection = 'publicProfiles';
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
@@ -172,11 +176,52 @@ class CloudSyncNotifier extends StateNotifier<CloudSyncState> {
   }
 
   Future<void> _uploadFromPrefs(String uid, SharedPreferences prefs) async {
+    final rankPoints = prefs.getInt(rankPointsPrefsKey) ?? 0;
+    final statisticsJson = prefs.getString(gameStatisticsPrefsKey);
+
     await _firestore.collection(_collection).doc(uid).set({
-      'rankPoints': prefs.getInt(rankPointsPrefsKey) ?? 0,
-      'statistics': prefs.getString(gameStatisticsPrefsKey),
+      'rankPoints': rankPoints,
+      'statistics': statisticsJson,
       'sessionHistory': prefs.getString(gameSessionHistoryPrefsKey),
       'gameHistory': prefs.getString(GameHistoryManager.prefsKey),
+      'updatedAt': Timestamp.fromDate(DateTime.now()),
+    });
+
+    await _upsertPublicProfile(uid, rankPoints, statisticsJson);
+  }
+
+  /// Updates this player's public leaderboard/search entry (see
+  /// lib/providers/leaderboard_provider.dart and player_search_provider.dart).
+  /// Only fields safe to expose to anyone go here -- never the backup blob
+  /// above. This only runs when the player explicitly syncs, so the
+  /// leaderboard reflects their data as of their last sync, not live.
+  Future<void> _upsertPublicProfile(
+    String uid,
+    int rankPoints,
+    String? statisticsJson,
+  ) async {
+    var wins = 0;
+    var totalGames = 0;
+    var winStreak = 0;
+    if (statisticsJson != null) {
+      try {
+        final stats =
+            GameStatistics.fromJson(jsonDecode(statisticsJson) as Map<String, dynamic>);
+        wins = stats.playerAWins;
+        totalGames = stats.totalGames;
+        winStreak = stats.playerAWinStreak;
+      } catch (_) {
+        // Malformed stats JSON -- publish the profile with zeros rather
+        // than fail the whole sync over display-only fields.
+      }
+    }
+
+    await _firestore.collection(_publicProfileCollection).doc(uid).set({
+      'displayName': _auth.currentUser?.displayName ?? '名無しさん',
+      'rankPoints': rankPoints,
+      'wins': wins,
+      'totalGames': totalGames,
+      'winStreak': winStreak,
       'updatedAt': Timestamp.fromDate(DateTime.now()),
     });
   }

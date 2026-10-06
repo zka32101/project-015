@@ -15,8 +15,15 @@ class _StubGoogleSignIn extends GoogleSignIn {
   Future<GoogleSignInAccount?> signOut() async => null;
 }
 
-CloudSyncNotifier _buildNotifier(FakeFirebaseFirestore firestore, String uid) {
-  final auth = MockFirebaseAuth(mockUser: MockUser(uid: uid), signedIn: true);
+CloudSyncNotifier _buildNotifier(
+  FakeFirebaseFirestore firestore,
+  String uid, {
+  String? displayName,
+}) {
+  final auth = MockFirebaseAuth(
+    mockUser: MockUser(uid: uid, displayName: displayName),
+    signedIn: true,
+  );
   return CloudSyncNotifier(
     firestore: firestore,
     auth: auth,
@@ -79,6 +86,38 @@ void main() {
       expect(prefs.getString('game_statistics'), '{"totalGames":50}');
       expect(prefs.getString('game_session_history'), '[{"foo":"bar"}]');
       expect(prefs.getString('game_history'), '[{"id":"old"}]');
+    });
+
+    test('restoreOrUploadFor also publishes a public leaderboard/search entry', () async {
+      SharedPreferences.setMockInitialValues({
+        'rank_points': 42,
+        'game_statistics': '{"totalGames":10,"playerAWins":7,"playerAWinStreak":3}',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final notifier = _buildNotifier(firestore, 'me', displayName: 'さくら');
+
+      await notifier.restoreOrUploadFor('me', prefs);
+
+      final doc = await firestore.collection('publicProfiles').doc('me').get();
+      expect(doc.exists, isTrue);
+      expect(doc.data()!['displayName'], 'さくら');
+      expect(doc.data()!['rankPoints'], 42);
+      expect(doc.data()!['wins'], 7);
+      expect(doc.data()!['totalGames'], 10);
+      expect(doc.data()!['winStreak'], 3);
+    });
+
+    test('public profile falls back to zeros when statistics JSON is missing', () async {
+      SharedPreferences.setMockInitialValues({'rank_points': 5});
+      final prefs = await SharedPreferences.getInstance();
+      final notifier = _buildNotifier(firestore, 'me');
+
+      await notifier.restoreOrUploadFor('me', prefs);
+
+      final doc = await firestore.collection('publicProfiles').doc('me').get();
+      expect(doc.data()!['displayName'], '名無しさん');
+      expect(doc.data()!['wins'], 0);
+      expect(doc.data()!['totalGames'], 0);
     });
 
     test('syncNow re-uploads the current local data, overwriting the cloud backup', () async {
